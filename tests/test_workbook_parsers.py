@@ -109,8 +109,11 @@ def test_euas_hydro_parser():
     assert records[0]["province"] == "Şanlıurfa"
     assert records[0]["installed_capacity_mw"] == 2405
     assert records[0]["gross_generation_gwh"] == 5456.5
-    assert records[0]["average_project_generation_gwh"] == 8900
-    assert records[0]["firm_project_generation_gwh"] == 7400
+    assert records[0]["average_project_generation_gwh"] is None
+    assert records[0]["firm_project_generation_gwh"] is None
+    assert records[0]["_project_generation_drop_reasons"] == [
+        "source_project_generation_mapping_unverifiable"
+    ]
 
 
 def test_euas_hydro_parser_nulls_implausible_project_generation():
@@ -143,8 +146,8 @@ def test_euas_hydro_parser_nulls_implausible_project_generation():
     assert records["BERKE"]["firm_project_generation_gwh"] is None
     assert records["KEBAN"]["installed_capacity_mw"] == 1330
     assert records["KEBAN"]["gross_generation_gwh"] == 5536.518
-    assert records["KEBAN"]["average_project_generation_gwh"] == 2000
-    assert records["KEBAN"]["firm_project_generation_gwh"] == 1500
+    assert records["KEBAN"]["average_project_generation_gwh"] is None
+    assert records["KEBAN"]["firm_project_generation_gwh"] is None
 
 
 def test_year_parser_ignores_footnote_containing_a_year():
