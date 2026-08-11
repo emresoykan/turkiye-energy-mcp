@@ -1,3 +1,4 @@
+import logging
 import math
 import re
 import unicodedata
@@ -9,6 +10,7 @@ from ..exceptions import EnergyDataError, ErrorCode
 
 ISTANBUL = ZoneInfo("Europe/Istanbul")
 NULL_VALUES = {"", "-", "—", "n/a", "na", "null", "yok"}
+logger = logging.getLogger(__name__)
 
 
 def normalize_turkish_number(value: Any) -> float | None:
@@ -76,6 +78,63 @@ def normalize_key(value: str) -> str:
     text = value.replace("İ", "I").replace("ı", "i")
     text = unicodedata.normalize("NFKD", text)
     return "".join(char for char in text if not unicodedata.combining(char)).casefold().strip()
+
+
+def normalize_plant_name(value: str | None) -> str | None:
+    """Normalize plant names for equality joins across TEİAŞ label variants."""
+    if not value:
+        return None
+    text = normalize_key(value)
+    text = text.replace("hes", " ")
+    text = re.sub(r"[^a-z0-9]+", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text or None
+
+
+def annual_energy_ceiling_gwh(capacity_mw: float | None) -> float | None:
+    if capacity_mw is None or capacity_mw <= 0:
+        return None
+    return capacity_mw * 8760.0 / 1000.0
+
+
+def guard_project_generation(
+    *,
+    plant_name: str | None,
+    capacity_mw: float | None,
+    average_gwh: float | None,
+    firm_gwh: float | None,
+) -> tuple[float | None, float | None]:
+    """Drop physically impossible project-generation values.
+
+    TEİAŞ hydro workbooks sometimes publish average/firm project GWh cells that
+    exceed MW×8760/1000 for the same row. Those cells are nulled rather than
+    returned as if they belonged to the plant.
+    """
+    ceiling = annual_energy_ceiling_gwh(capacity_mw)
+    if ceiling is None:
+        return average_gwh, firm_gwh
+
+    if average_gwh is not None and average_gwh > ceiling:
+        logger.warning(
+            "Dropping implausible average_project_generation_gwh for %s: "
+            "value=%s GWh exceeds ceiling=%.3f GWh at %.3f MW",
+            plant_name,
+            average_gwh,
+            ceiling,
+            capacity_mw,
+        )
+        average_gwh = None
+    if firm_gwh is not None and firm_gwh > ceiling:
+        logger.warning(
+            "Dropping implausible firm_project_generation_gwh for %s: "
+            "value=%s GWh exceeds ceiling=%.3f GWh at %.3f MW",
+            plant_name,
+            firm_gwh,
+            ceiling,
+            capacity_mw,
+        )
+        firm_gwh = None
+    return average_gwh, firm_gwh
 
 
 def clean_text(value: Any) -> str | None:

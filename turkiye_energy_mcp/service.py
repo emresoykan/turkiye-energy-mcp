@@ -4,7 +4,7 @@ from .clients.teias import TeiasClient, Workbook
 from .exceptions import EnergyDataError, ErrorCode
 from .freshness import classify_annual_freshness, classify_monthly_freshness
 from .models import dataset_response
-from .parsers.common import normalize_key, parse_date, parse_year_range
+from .parsers.common import normalize_key, normalize_plant_name, parse_date, parse_year_range
 from .parsers.workbooks import (
     parse_capacity_by_organization,
     parse_capacity_mix,
@@ -675,7 +675,10 @@ class EnergyService:
             for record in parse_euas_thermal_plants(
                 workbook.content, reference_year=reference_year
             ):
-                key = (record.get("name"), record.get("plant_type"))
+                key = (
+                    normalize_plant_name(record.get("name")),
+                    record.get("plant_type"),
+                )
                 if key in seen:
                     continue
                 seen.add(key)
@@ -684,10 +687,14 @@ class EnergyService:
             for record in parse_euas_hydro_plants(
                 workbook.content, reference_year=reference_year
             ):
-                key = (record.get("name"), record.get("plant_type"))
+                key = (
+                    record.get("name_key") or normalize_plant_name(record.get("name")),
+                    record.get("plant_type"),
+                )
                 if key in seen:
                     continue
                 seen.add(key)
+                record = {k: v for k, v in record.items() if k != "name_key"}
                 records.append(record)
         return records, workbooks
 

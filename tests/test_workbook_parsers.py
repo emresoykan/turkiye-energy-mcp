@@ -91,14 +91,60 @@ def test_euas_thermal_parser():
 
 def test_euas_hydro_parser():
     frame = pd.DataFrame([[None] * 21 for _ in range(13)])
+    frame.iloc[7, 4] = "SANTRALIN ADI"
+    frame.iloc[7, 6] = "BULUNDUĞU İL"
+    frame.iloc[7, 17] = "KURULU GÜÇ"
+    frame.iloc[7, 18] = "BRÜT ÜRETİM"
+    frame.iloc[8, 19] = "ORTALAMA"
+    frame.iloc[8, 20] = "GÜVENİLİR"
     frame.iloc[12, 2] = 1
     frame.iloc[12, 4] = "ATATÜRK"
     frame.iloc[12, 6] = "Şanlıurfa"
     frame.iloc[12, 17] = 2405
     frame.iloc[12, 18] = 5456.5
+    frame.iloc[12, 19] = 8900
+    frame.iloc[12, 20] = 7400
     records = parse_euas_hydro_plants(workbook_bytes(frame))
     assert records[0]["plant_type"] == "hydro"
     assert records[0]["province"] == "Şanlıurfa"
+    assert records[0]["installed_capacity_mw"] == 2405
+    assert records[0]["gross_generation_gwh"] == 5456.5
+    assert records[0]["average_project_generation_gwh"] == 8900
+    assert records[0]["firm_project_generation_gwh"] == 7400
+
+
+def test_euas_hydro_parser_nulls_implausible_project_generation():
+    frame = pd.DataFrame([[None] * 21 for _ in range(14)])
+    frame.iloc[7, 4] = "SANTRALIN ADI"
+    frame.iloc[7, 17] = "KURULU GÜÇ"
+    frame.iloc[7, 18] = "BRÜT ÜRETİM"
+    frame.iloc[8, 19] = "ORTALAMA"
+    frame.iloc[8, 20] = "GÜVENİLİR"
+    # BERKE-sized plant with Atatürk-sized project generation (impossible).
+    frame.iloc[12, 2] = 1
+    frame.iloc[12, 4] = "BERKE"
+    frame.iloc[12, 6] = "Adana"
+    frame.iloc[12, 17] = 510
+    frame.iloc[12, 18] = 1211.236
+    frame.iloc[12, 19] = 8900
+    frame.iloc[12, 20] = 7400
+    # Control row: capacity/gross must remain untouched.
+    frame.iloc[13, 2] = 2
+    frame.iloc[13, 4] = "KEBAN"
+    frame.iloc[13, 6] = "Elazığ"
+    frame.iloc[13, 17] = 1330
+    frame.iloc[13, 18] = 5536.518
+    frame.iloc[13, 19] = 2000
+    frame.iloc[13, 20] = 1500
+    records = {item["name"]: item for item in parse_euas_hydro_plants(workbook_bytes(frame))}
+    assert records["BERKE"]["installed_capacity_mw"] == 510
+    assert records["BERKE"]["gross_generation_gwh"] == 1211.236
+    assert records["BERKE"]["average_project_generation_gwh"] is None
+    assert records["BERKE"]["firm_project_generation_gwh"] is None
+    assert records["KEBAN"]["installed_capacity_mw"] == 1330
+    assert records["KEBAN"]["gross_generation_gwh"] == 5536.518
+    assert records["KEBAN"]["average_project_generation_gwh"] == 2000
+    assert records["KEBAN"]["firm_project_generation_gwh"] == 1500
 
 
 def test_year_parser_ignores_footnote_containing_a_year():
