@@ -122,6 +122,33 @@ def _workbook_meta(*workbooks: Workbook) -> dict[str, Any]:
     }
 
 
+def _project_generation_quality(records: list[dict[str, Any]]) -> dict[str, Any]:
+    """Summarize only records remaining after caller filters."""
+    dropped = [
+        record for record in records if record.get("_project_generation_dropped")
+    ]
+    reasons: Counter[str] = Counter()
+    for record in dropped:
+        reasons.update(record.get("_project_generation_drop_reasons") or [])
+    return {
+        "dropped_project_generation_rows": len(dropped),
+        "reason": (
+            "Project-generation fields are nulled for returned rows when source "
+            "mapping is unverifiable, capacity ceiling is exceeded, or project "
+            "and gross generation differ by more than 3x."
+        ),
+        "reason_counts": dict(sorted(reasons.items())),
+    }
+
+
+def _public_plant_record(record: dict[str, Any]) -> dict[str, Any]:
+    return {
+        key: value
+        for key, value in record.items()
+        if not key.startswith("_") and key != "name_key"
+    }
+
+
 def _ensure_annual_overlap(
     *,
     requested_start: int,
@@ -664,7 +691,7 @@ class EnergyService:
 
     async def _euas_plants(
         self,
-    ) -> tuple[list[dict[str, Any]], list[Workbook], dict[str, Any]]:
+    ) -> tuple[list[dict[str, Any]], list[Workbook]]:
         thermal_books = await self.teias.annual_workbooks("euas_thermal_plants")
         hydro_books = await self.teias.annual_workbooks("euas_hydro_plants")
         workbooks = thermal_books + hydro_books
@@ -674,8 +701,6 @@ class EnergyService:
         )
         records: list[dict[str, Any]] = []
         seen: set[tuple[str | None, str | None]] = set()
-        dropped_project_rows = 0
-        drop_reasons: Counter[str] = Counter()
         for workbook in thermal_books:
             for record in parse_euas_thermal_plants(
                 workbook.content, reference_year=reference_year
@@ -699,33 +724,17 @@ class EnergyService:
                 if key in seen:
                     continue
                 seen.add(key)
-                if record.get("_project_generation_dropped"):
-                    dropped_project_rows += 1
-                    drop_reasons.update(record.get("_project_generation_drop_reasons") or [])
-                record = {
-                    k: v
-                    for k, v in record.items()
-                    if not k.startswith("_") and k != "name_key"
-                }
                 records.append(record)
-        quality = {
-            "dropped_project_generation_rows": dropped_project_rows,
-            "reason": (
-                "TEİAŞ XLS project-generation columns have no independent plant-name "
-                "key and their row alignment is not trustworthy; both fields are "
-                "nulled. Capacity-ceiling and 3x gross/average checks are also "
-                "reported in reason_counts."
-            ),
-            "reason_counts": dict(sorted(drop_reasons.items())),
-        }
-        return records, workbooks, quality
+        return records, workbooks
 
     async def get_euas_power_plants(
         self,
         plant_type: str | None = None,
         province: str | None = None,
+        *,
+        _name_query: str | None = None,
     ) -> dict[str, Any]:
-        records, workbooks, data_quality = await self._euas_plants()
+        records, workbooks = await self._euas_plants()
         type_key = normalize_key(plant_type or "")
         type_aliases = {
             "hidro": "hydro",
@@ -735,12 +744,16 @@ class EnergyService:
         }
         type_key = type_aliases.get(type_key, type_key)
         province_key = normalize_key(province or "")
-        data = [
+        name_key = normalize_key(_name_query or "")
+        selected = [
             record
             for record in records
             if (not type_key or record["plant_type"] == type_key)
             and (not province_key or province_key in normalize_key(record["province"] or ""))
+            and (not name_key or name_key in normalize_key(record["name"] or ""))
         ]
+        data_quality = _project_generation_quality(selected)
+        data = [_public_plant_record(record) for record in selected]
         meta = _workbook_meta(*workbooks)
         period = meta["latest_available_period"]
         _require_data(
@@ -777,11 +790,7 @@ class EnergyService:
             raise EnergyDataError(
                 ErrorCode.INVALID_PARAMETER, "Santral adı en az iki karakter olmalıdır."
             )
-        result = await self.get_euas_power_plants()
-        needle = normalize_key(plant_name)
-        result["data"] = [
-            item for item in result["data"] if needle in normalize_key(item["name"])
-        ]
+        result = await self.get_euas_power_plants(_name_query=plant_name)
         _require_data(
             result["data"],
             "EÜAŞ santral adı bulunamadı.",

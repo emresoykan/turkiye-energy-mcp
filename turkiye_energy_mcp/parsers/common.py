@@ -165,6 +165,63 @@ def guard_project_generation(
     return average_gwh, firm_gwh, reasons
 
 
+def guard_single_project_generation(
+    *,
+    plant_name: str | None,
+    capacity_mw: float | None,
+    gross_generation_gwh: float | None,
+    project_generation_gwh: float | None,
+) -> tuple[float | None, list[str]]:
+    """Validate a thermal plant's single project-generation field."""
+    if project_generation_gwh is None:
+        return None, []
+
+    reasons: list[str] = []
+    ceiling = annual_energy_ceiling_gwh(capacity_mw)
+    if ceiling is not None and project_generation_gwh > ceiling:
+        reasons.append("project_generation_gwh_exceeds_capacity_ceiling")
+        logger.warning(
+            "Suspicious thermal project generation for %s: value=%s GWh "
+            "exceeds ceiling=%.3f GWh at %.3f MW",
+            plant_name,
+            project_generation_gwh,
+            ceiling,
+            capacity_mw,
+        )
+
+    if (
+        gross_generation_gwh is not None
+        and gross_generation_gwh >= 0
+        and project_generation_gwh >= 0
+    ):
+        if gross_generation_gwh == 0 or project_generation_gwh == 0:
+            ratio = float("inf") if gross_generation_gwh != project_generation_gwh else 1.0
+        else:
+            ratio = max(
+                gross_generation_gwh / project_generation_gwh,
+                project_generation_gwh / gross_generation_gwh,
+            )
+        if ratio > 3:
+            reasons.append("project_vs_gross_ratio_exceeds_3x")
+            logger.warning(
+                "Suspicious thermal project generation for %s: project=%s GWh "
+                "and gross=%s GWh differ by %.3fx",
+                plant_name,
+                project_generation_gwh,
+                gross_generation_gwh,
+                ratio,
+            )
+
+    if reasons:
+        logger.warning(
+            "Dropping thermal project generation for %s: reasons=%s",
+            plant_name,
+            ",".join(reasons),
+        )
+        return None, reasons
+    return project_generation_gwh, reasons
+
+
 def clean_text(value: Any) -> str | None:
     if value is None:
         return None
