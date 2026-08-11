@@ -31,6 +31,9 @@ class Settings(BaseSettings):
 
     teias_base_url: str = "https://www.teias.gov.tr"
     teias_file_base_url: str = "https://webim.teias.gov.tr"
+    # Absolute public origin for Claude OAuth discovery (no trailing slash).
+    # Example: https://turkiye-energy-mcp-production.up.railway.app
+    public_base_url: str | None = None
 
 
 @lru_cache(maxsize=1)

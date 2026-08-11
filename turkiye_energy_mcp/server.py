@@ -13,6 +13,7 @@ from .config import get_settings
 from .exceptions import EnergyDataError, ErrorCode
 from .http_client import ResilientHTTPClient
 from .logging import configure_logging
+from .oauth_compat import PublicOAuthCompat
 from .service import EnergyService
 
 settings = get_settings()
@@ -23,6 +24,9 @@ cache = AsyncTTLCache()
 http = ResilientHTTPClient(settings)
 teias_client = TeiasClient(settings, http, cache)
 service = EnergyService(teias_client)
+oauth: PublicOAuthCompat | None = None
+if settings.public_base_url:
+    oauth = PublicOAuthCompat(settings.public_base_url, settings.mcp_path)
 
 
 @asynccontextmanager
@@ -50,6 +54,45 @@ READ_ONLY = ToolAnnotations(readOnlyHint=True, openWorldHint=True)
 @mcp.custom_route("/health", methods=["GET"])
 async def health(_: Request) -> JSONResponse:
     return JSONResponse({"status": "ok", "service": "turkiye-energy-mcp"})
+
+
+if oauth is not None:
+
+    @mcp.custom_route("/", methods=["GET"])
+    async def root(request: Request) -> Any:
+        return await oauth.root_help(request)
+
+    @mcp.custom_route("/.well-known/oauth-authorization-server", methods=["GET"])
+    async def oauth_as_metadata(_: Request) -> JSONResponse:
+        return JSONResponse(oauth.authorization_server_metadata())
+
+    @mcp.custom_route("/.well-known/openid-configuration", methods=["GET"])
+    async def openid_configuration(_: Request) -> JSONResponse:
+        return JSONResponse(oauth.authorization_server_metadata())
+
+    @mcp.custom_route("/.well-known/oauth-protected-resource", methods=["GET"])
+    async def oauth_pr_metadata(_: Request) -> JSONResponse:
+        return JSONResponse(oauth.protected_resource_metadata())
+
+    @mcp.custom_route(f"/.well-known/oauth-protected-resource{settings.mcp_path}", methods=["GET"])
+    async def oauth_pr_metadata_with_path(_: Request) -> JSONResponse:
+        return JSONResponse(oauth.protected_resource_metadata())
+
+    @mcp.custom_route("/.well-known/jwks.json", methods=["GET"])
+    async def jwks(request: Request) -> Any:
+        return await oauth.jwks(request)
+
+    @mcp.custom_route("/register", methods=["POST"])
+    async def register(request: Request) -> Any:
+        return await oauth.register(request)
+
+    @mcp.custom_route("/authorize", methods=["GET"])
+    async def authorize(request: Request) -> Any:
+        return await oauth.authorize(request)
+
+    @mcp.custom_route("/token", methods=["POST"])
+    async def token(request: Request) -> Any:
+        return await oauth.token(request)
 
 
 async def _safe(awaitable: Any) -> dict[str, Any]:

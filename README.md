@@ -99,6 +99,7 @@ MCP_TRANSPORT=stdio turkiye-energy-mcp
 | `CACHE_PLANTS_TTL_SECONDS` | `86400` | Santral cache süresi |
 | `TEIAS_BASE_URL` | resmî TEİAŞ URL | JSON katalog kökü |
 | `TEIAS_FILE_BASE_URL` | resmî TEİAŞ dosya URL | Dosya indirme kökü |
+| `PUBLIC_BASE_URL` | boş | Claude connector OAuth discovery origin'i (ör. Railway domain) |
 
 Yıllık/aylık kaynak seçimi sabit yıl veya sabit dosya adına bağlı değildir.
 Sunucu TEİAŞ galeri kataloğundan en yeni yayın tarihli ve en güncel dönemi kapsayan
@@ -114,8 +115,9 @@ Depo `Dockerfile` ve `railway.toml` içerir.
 railway up
 ```
 
-Railway'de `MCP_TRANSPORT=streamable-http` ve `HOST=0.0.0.0` kullanın. `PORT`
-Railway tarafından atanır. Deploy sonrası endpoint:
+Railway'de `MCP_TRANSPORT=streamable-http`, `HOST=0.0.0.0` ve
+`PUBLIC_BASE_URL=https://<railway-domain>` kullanın. `PORT` Railway tarafından
+atanır. Deploy sonrası Claude/Cursor endpoint:
 
 ```text
 https://<railway-domain>/mcp
@@ -229,10 +231,30 @@ Local stdio:
 
 ## Claude config
 
+Claude custom connector (claude.ai / Desktop Connect UI) için MCP URL **mutlaka**
+`/mcp` ile bitmeli:
+
+```text
+https://turkiye-energy-mcp-production.up.railway.app/mcp
+```
+
+Kök domain (`...railway.app`) 404 döner; Claude bunu “sign-in service” hatası olarak
+gösterebilir. Railway Variables içine şunu ekleyin ve redeploy edin:
+
+```text
+PUBLIC_BASE_URL=https://turkiye-energy-mcp-production.up.railway.app
+MCP_TRANSPORT=streamable-http
+HOST=0.0.0.0
+```
+
+`PUBLIC_BASE_URL` Claude'un beklediği OAuth discovery / Dynamic Client Registration
+uçlarını açar. MCP araçları yine herkese açık kalır; OAuth yalnızca bağlayıcı
+uyumluluğu içindir.
+
 Claude Code remote HTTP:
 
 ```bash
-claude mcp add --transport http turkiye-energy https://<railway-domain>/mcp
+claude mcp add --transport http turkiye-energy https://turkiye-energy-mcp-production.up.railway.app/mcp
 ```
 
 Claude Desktop local stdio config:
