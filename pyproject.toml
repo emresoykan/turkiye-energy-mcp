@@ -1,0 +1,43 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "turkiye-energy-mcp"
+version = "0.1.0"
+description = "TEİAŞ ve EÜAŞ kapsamındaki resmî Türkiye elektrik verileri için MCP sunucusu"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+  "httpx>=0.28",
+  "mcp>=1.12",
+  "openpyxl>=3.1",
+  "pandas>=2.2",
+  "pydantic>=2.11",
+  "pydantic-settings>=2.10",
+  "tenacity>=9.1",
+  "xlrd>=2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.4",
+  "pytest-asyncio>=1.1",
+  "respx>=0.22",
+]
+
+[project.scripts]
+turkiye-energy-mcp = "turkiye_energy_mcp.server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["turkiye_energy_mcp"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
