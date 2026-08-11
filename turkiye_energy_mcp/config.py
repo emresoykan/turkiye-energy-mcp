@@ -31,7 +31,6 @@ class Settings(BaseSettings):
 
     teias_base_url: str = "https://www.teias.gov.tr"
     teias_file_base_url: str = "https://webim.teias.gov.tr"
-    teias_annual_report_year: int = Field(default=2024, ge=2008, le=2100)
 
 
 @lru_cache(maxsize=1)

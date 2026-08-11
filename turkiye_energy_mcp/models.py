@@ -16,6 +16,10 @@ class SourceMetadata(BaseModel):
     frequency: str
     notes: str | None = None
     original_unit: str | None = None
+    latest_available_period: str | None = None
+    data_freshness: str | None = None
+    publication_date: str | None = None
+    selected_source_name: str | None = None
 
 
 class DatasetResponse(BaseModel):
@@ -46,6 +50,10 @@ def dataset_response(
     unit: str | None = None,
     notes: str | None = None,
     original_unit: str | None = None,
+    latest_available_period: str | None = None,
+    data_freshness: str | None = None,
+    publication_date: str | None = None,
+    selected_source_name: str | None = None,
     **metadata: Any,
 ) -> dict[str, Any]:
     return DatasetResponse(
@@ -62,6 +70,10 @@ def dataset_response(
             frequency=frequency,
             notes=notes,
             original_unit=original_unit,
+            latest_available_period=latest_available_period,
+            data_freshness=data_freshness,
+            publication_date=publication_date,
+            selected_source_name=selected_source_name,
             **metadata,
         ),
     ).as_dict()

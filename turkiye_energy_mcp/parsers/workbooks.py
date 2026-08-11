@@ -345,7 +345,9 @@ def parse_euas_generation_by_source(content: bytes) -> list[dict[str, Any]]:
     return result
 
 
-def parse_euas_thermal_plants(content: bytes) -> list[dict[str, Any]]:
+def parse_euas_thermal_plants(
+    content: bytes, reference_year: int | None = None
+) -> list[dict[str, Any]]:
     df = _frame(content)
     records: list[dict[str, Any]] = []
     current_source: str | None = None
@@ -370,13 +372,15 @@ def parse_euas_thermal_plants(content: bytes) -> list[dict[str, Any]]:
                 "installed_capacity_mw": number(_cell(row, 16)),
                 "gross_generation_gwh": number(_cell(row, 17)),
                 "project_generation_gwh": number(_cell(row, 18)),
-                "reference_year": 2024,
+                "reference_year": reference_year,
             }
         )
     return [record for record in records if record["name"]]
 
 
-def parse_euas_hydro_plants(content: bytes) -> list[dict[str, Any]]:
+def parse_euas_hydro_plants(
+    content: bytes, reference_year: int | None = None
+) -> list[dict[str, Any]]:
     df = _frame(content)
     records: list[dict[str, Any]] = []
     for _, row in df.iterrows():
@@ -392,7 +396,7 @@ def parse_euas_hydro_plants(content: bytes) -> list[dict[str, Any]]:
                 "gross_generation_gwh": number(_cell(row, 18)),
                 "average_project_generation_gwh": number(_cell(row, 19)),
                 "firm_project_generation_gwh": number(_cell(row, 20)),
-                "reference_year": 2024,
+                "reference_year": reference_year,
             }
         )
     return [record for record in records if record["name"]]
