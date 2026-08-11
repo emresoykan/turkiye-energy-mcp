@@ -89,6 +89,26 @@ def test_euas_thermal_parser():
     assert records[0]["source"] == "Linyit"
 
 
+def test_euas_thermal_parser_nulls_implausible_project_generation():
+    frame = pd.DataFrame([[None] * 19 for _ in range(12)])
+    frame.iloc[11, 2] = 1
+    frame.iloc[11, 3] = "Soma A"
+    frame.iloc[11, 4] = "Linyit"
+    frame.iloc[11, 5] = "Manisa"
+    frame.iloc[11, 16] = 44
+    frame.iloc[11, 17] = 100
+    frame.iloc[11, 18] = 1365
+    record = parse_euas_thermal_plants(workbook_bytes(frame))[0]
+    assert record["installed_capacity_mw"] == 44
+    assert record["gross_generation_gwh"] == 100
+    assert record["project_generation_gwh"] is None
+    assert record["_project_generation_dropped"] is True
+    assert record["_project_generation_drop_reasons"] == [
+        "project_generation_gwh_exceeds_capacity_ceiling",
+        "project_vs_gross_ratio_exceeds_3x",
+    ]
+
+
 def test_euas_hydro_parser():
     frame = pd.DataFrame([[None] * 21 for _ in range(13)])
     frame.iloc[7, 4] = "SANTRALIN ADI"

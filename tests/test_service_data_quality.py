@@ -32,6 +32,13 @@ def workbook(name: str, content: bytes) -> Workbook:
 @pytest.mark.asyncio
 async def test_power_plant_response_reports_dropped_project_rows():
     thermal = pd.DataFrame([[None] * 21 for _ in range(12)])
+    thermal.iloc[11, 2] = 1
+    thermal.iloc[11, 3] = "Soma A"
+    thermal.iloc[11, 4] = "Linyit"
+    thermal.iloc[11, 5] = "Manisa"
+    thermal.iloc[11, 16] = 44
+    thermal.iloc[11, 17] = 100
+    thermal.iloc[11, 18] = 1365
     hydro = pd.DataFrame([[None] * 21 for _ in range(13)])
     hydro.iloc[7, 4] = "SANTRALIN ADI"
     hydro.iloc[7, 6] = "BULUNDUĞU İL"
@@ -61,13 +68,30 @@ async def test_power_plant_response_reports_dropped_project_rows():
     assert response["metadata"]["data_quality"] == {
         "dropped_project_generation_rows": 1,
         "reason": (
-            "TEİAŞ XLS project-generation columns have no independent plant-name "
-            "key and their row alignment is not trustworthy; both fields are "
-            "nulled. Capacity-ceiling and 3x gross/average checks are also "
-            "reported in reason_counts."
+            "Project-generation fields are nulled for returned rows when source "
+            "mapping is unverifiable, capacity ceiling is exceeded, or project "
+            "and gross generation differ by more than 3x."
         ),
         "reason_counts": {
             "average_vs_gross_ratio_exceeds_3x": 1,
             "source_project_generation_mapping_unverifiable": 1,
+        },
+    }
+
+    thermal_response = await EnergyService(FakeTeias()).get_euas_power_plants("thermal")
+    assert [item["name"] for item in thermal_response["data"]] == ["Soma A"]
+    assert thermal_response["data"][0]["installed_capacity_mw"] == 44
+    assert thermal_response["data"][0]["gross_generation_gwh"] == 100
+    assert thermal_response["data"][0]["project_generation_gwh"] is None
+    assert thermal_response["metadata"]["data_quality"] == {
+        "dropped_project_generation_rows": 1,
+        "reason": (
+            "Project-generation fields are nulled for returned rows when source "
+            "mapping is unverifiable, capacity ceiling is exceeded, or project "
+            "and gross generation differ by more than 3x."
+        ),
+        "reason_counts": {
+            "project_generation_gwh_exceeds_capacity_ceiling": 1,
+            "project_vs_gross_ratio_exceeds_3x": 1,
         },
     }
