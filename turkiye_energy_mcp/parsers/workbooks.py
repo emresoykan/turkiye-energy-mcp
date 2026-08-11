@@ -390,7 +390,11 @@ def parse_euas_thermal_plants(
             current_source = aliases.get(normalize_key(source_text), source_text)
         capacity_mw = number(_cell(row, 16))
         gross_generation_gwh = number(_cell(row, 17))
-        project_generation_gwh, quality_reasons = guard_single_project_generation(
+        (
+            project_generation_gwh,
+            drop_reasons,
+            suspect_reasons,
+        ) = guard_single_project_generation(
             plant_name=name,
             capacity_mw=capacity_mw,
             gross_generation_gwh=gross_generation_gwh,
@@ -405,9 +409,11 @@ def parse_euas_thermal_plants(
                 "installed_capacity_mw": capacity_mw,
                 "gross_generation_gwh": gross_generation_gwh,
                 "project_generation_gwh": project_generation_gwh,
+                "project_generation_suspect": bool(suspect_reasons),
                 "reference_year": reference_year,
-                "_project_generation_dropped": bool(quality_reasons),
-                "_project_generation_drop_reasons": quality_reasons,
+                "_project_generation_dropped": bool(drop_reasons),
+                "_project_generation_drop_reasons": drop_reasons,
+                "_project_generation_suspect_reasons": suspect_reasons,
             }
         )
     return records
@@ -451,7 +457,12 @@ def parse_euas_hydro_plants(
         gross_generation_gwh = number(_cell(row, gross_col))
         average_raw = number(_cell(row, average_col)) if average_col < len(row) else None
         firm_raw = number(_cell(row, firm_col)) if firm_col < len(row) else None
-        average_gwh, firm_gwh, quality_reasons = guard_project_generation(
+        (
+            average_gwh,
+            firm_gwh,
+            drop_reasons,
+            suspect_reasons,
+        ) = guard_project_generation(
             plant_name=name,
             capacity_mw=capacity_mw,
             gross_generation_gwh=gross_generation_gwh,
@@ -465,7 +476,7 @@ def parse_euas_hydro_plants(
         # an honest name-based join is impossible: do not expose even
         # plausible-looking pairs as correctly mapped.
         if average_raw is not None or firm_raw is not None:
-            quality_reasons.append("source_project_generation_mapping_unverifiable")
+            drop_reasons.append("source_project_generation_mapping_unverifiable")
             average_gwh = None
             firm_gwh = None
             logger.warning(
@@ -484,9 +495,11 @@ def parse_euas_hydro_plants(
                 "gross_generation_gwh": gross_generation_gwh,
                 "average_project_generation_gwh": average_gwh,
                 "firm_project_generation_gwh": firm_gwh,
+                "project_generation_suspect": bool(suspect_reasons),
                 "reference_year": reference_year,
-                "_project_generation_dropped": bool(quality_reasons),
-                "_project_generation_drop_reasons": quality_reasons,
+                "_project_generation_dropped": bool(drop_reasons),
+                "_project_generation_drop_reasons": drop_reasons,
+                "_project_generation_suspect_reasons": suspect_reasons,
             }
         )
     return records

@@ -83,10 +83,13 @@ def test_euas_thermal_parser():
     frame.iloc[11, 5] = "K.Maraş"
     frame.iloc[11, 16] = 1440
     frame.iloc[11, 17] = 2833.648
+    frame.iloc[11, 18] = 9360
     records = parse_euas_thermal_plants(workbook_bytes(frame))
     assert records[0]["name"] == "Afşin-Elbistan B"
     assert records[0]["installed_capacity_mw"] == 1440
     assert records[0]["source"] == "Linyit"
+    assert records[0]["project_generation_gwh"] == 9360
+    assert records[0]["project_generation_suspect"] is True
 
 
 def test_euas_thermal_parser_nulls_implausible_project_generation():
@@ -102,10 +105,13 @@ def test_euas_thermal_parser_nulls_implausible_project_generation():
     assert record["installed_capacity_mw"] == 44
     assert record["gross_generation_gwh"] == 100
     assert record["project_generation_gwh"] is None
+    assert record["project_generation_suspect"] is True
     assert record["_project_generation_dropped"] is True
     assert record["_project_generation_drop_reasons"] == [
         "project_generation_gwh_exceeds_capacity_ceiling",
-        "project_vs_gross_ratio_exceeds_3x",
+    ]
+    assert record["_project_generation_suspect_reasons"] == [
+        "project_vs_gross_ratio_exceeds_3x"
     ]
 
 
