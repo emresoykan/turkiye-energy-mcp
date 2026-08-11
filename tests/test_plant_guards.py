@@ -1,6 +1,7 @@
 from turkiye_energy_mcp.parsers.common import (
     annual_energy_ceiling_gwh,
     guard_project_generation,
+    guard_single_project_generation,
     normalize_plant_name,
 )
 
@@ -64,3 +65,17 @@ def test_guard_drops_pair_when_average_and_gross_differ_over_3x():
     assert average is None
     assert firm is None
     assert reasons == ["average_vs_gross_ratio_exceeds_3x"]
+
+
+def test_single_thermal_guard_applies_ceiling_and_ratio():
+    value, reasons = guard_single_project_generation(
+        plant_name="Soma A",
+        capacity_mw=44,
+        gross_generation_gwh=100,
+        project_generation_gwh=1365,
+    )
+    assert value is None
+    assert reasons == [
+        "project_generation_gwh_exceeds_capacity_ceiling",
+        "project_vs_gross_ratio_exceeds_3x",
+    ]

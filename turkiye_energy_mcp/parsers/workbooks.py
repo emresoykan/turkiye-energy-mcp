@@ -8,6 +8,7 @@ from ..exceptions import EnergyDataError, ErrorCode
 from .common import (
     clean_text,
     guard_project_generation,
+    guard_single_project_generation,
     logger,
     normalize_key,
     normalize_plant_name,
@@ -366,10 +367,17 @@ def parse_euas_thermal_plants(
     content: bytes, reference_year: int | None = None
 ) -> list[dict[str, Any]]:
     df = _frame(content)
+    logger.debug(
+        "EUAS thermal raw dataframe first 15 rows (untransformed):\n%s",
+        df.iloc[:15, :].to_string(index=True, header=True),
+    )
     records: list[dict[str, Any]] = []
     current_source: str | None = None
     for _, row in df.iterrows():
         if len(row) <= 17 or number(_cell(row, 2), 0) is None:
+            continue
+        name = clean_text(_cell(row, 3))
+        if not name:
             continue
         source_text = clean_text(_cell(row, 4))
         if source_text and source_text not in {'"', "'"} and normalize_key(source_text) not in {
@@ -380,19 +388,29 @@ def parse_euas_thermal_plants(
         elif source_text and source_text not in {'"', "'"}:
             aliases = {"lignite": "Linyit", "diesel oil": "Motorin"}
             current_source = aliases.get(normalize_key(source_text), source_text)
+        capacity_mw = number(_cell(row, 16))
+        gross_generation_gwh = number(_cell(row, 17))
+        project_generation_gwh, quality_reasons = guard_single_project_generation(
+            plant_name=name,
+            capacity_mw=capacity_mw,
+            gross_generation_gwh=gross_generation_gwh,
+            project_generation_gwh=number(_cell(row, 18)),
+        )
         records.append(
             {
-                "name": clean_text(_cell(row, 3)),
+                "name": name,
                 "plant_type": "thermal",
                 "source": current_source,
                 "province": clean_text(_cell(row, 5)),
-                "installed_capacity_mw": number(_cell(row, 16)),
-                "gross_generation_gwh": number(_cell(row, 17)),
-                "project_generation_gwh": number(_cell(row, 18)),
+                "installed_capacity_mw": capacity_mw,
+                "gross_generation_gwh": gross_generation_gwh,
+                "project_generation_gwh": project_generation_gwh,
                 "reference_year": reference_year,
+                "_project_generation_dropped": bool(quality_reasons),
+                "_project_generation_drop_reasons": quality_reasons,
             }
         )
-    return [record for record in records if record["name"]]
+    return records
 
 
 def parse_euas_hydro_plants(
