@@ -16,11 +16,36 @@ async def run() -> int:
     http = ResilientHTTPClient(settings)
     service = EnergyService(TeiasClient(settings, http, AsyncTTLCache()))
     checks = {
-        "capacity": service.get_installed_capacity(2024, 2024, "rüzgar"),
-        "generation": service.get_generation(2024, 2024, "toplam"),
-        "trade": service.get_import_export(2024, 2024, "Bulgaristan"),
-        "euas_plants": service.get_euas_power_plants("hydro", None),
-        "euas_share": service.get_euas_generation_share(2024, 2024),
+        "teias_get_monthly_energy": service.get_monthly_energy(
+            "2025-01-01", "2025-12-31", "tüketim"
+        ),
+        "teias_get_generation": service.get_generation(2024, 2024, "toplam"),
+        "teias_get_installed_capacity": service.get_installed_capacity(
+            2024, 2024, "rüzgar"
+        ),
+        "teias_get_peak_demand": service.get_peak_demand(2024, 2024),
+        "teias_get_import_export": service.get_import_export(
+            2024, 2024, "Bulgaristan"
+        ),
+        "teias_get_transmission_statistics": service.get_transmission_statistics(
+            2024, 2024
+        ),
+        "teias_get_renewable_summary": service.get_renewable_summary(2024, 2024),
+        "teias_get_system_summary": service.get_system_summary(2024),
+        "euas_get_power_plants": service.get_euas_power_plants("hydro", None),
+        "euas_get_plant": service.get_euas_plant("Keban"),
+        "euas_get_installed_capacity": service.get_euas_installed_capacity(2024, 2024),
+        "euas_get_generation": service.get_euas_generation(2024, 2024, "termik"),
+        "euas_get_monthly_generation": service.get_euas_monthly_generation(
+            "2025-01-01", "2025-12-31", "hidro"
+        ),
+        "get_euas_share_of_installed_capacity": service.get_euas_capacity_share(
+            2024, 2024
+        ),
+        "get_euas_share_of_generation": service.get_euas_generation_share(2024, 2024),
+        "compare_euas_vs_turkey_generation": service.compare_euas_vs_turkey_generation(
+            2024, 2024
+        ),
     }
     results: dict[str, object] = {}
     exit_code = 0

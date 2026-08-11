@@ -4,6 +4,6 @@ dockerfilePath = "Dockerfile"
 
 [deploy]
 startCommand = "turkiye-energy-mcp"
-healthcheckPath = "/mcp"
+healthcheckPath = "/health"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3

@@ -4,6 +4,8 @@ from typing import Any
 
 from mcp.server import MCPServer
 from mcp.types import ToolAnnotations
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 from .cache import AsyncTTLCache
 from .clients.teias import TeiasClient
@@ -43,6 +45,11 @@ mcp = MCPServer(
 )
 
 READ_ONLY = ToolAnnotations(readOnlyHint=True, openWorldHint=True)
+
+
+@mcp.custom_route("/health", methods=["GET"])
+async def health(_: Request) -> JSONResponse:
+    return JSONResponse({"status": "ok", "service": "turkiye-energy-mcp"})
 
 
 async def _safe(awaitable: Any) -> dict[str, Any]:

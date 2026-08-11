@@ -81,6 +81,8 @@ def normalize_key(value: str) -> str:
 def clean_text(value: Any) -> str | None:
     if value is None:
         return None
+    if isinstance(value, float) and math.isnan(value):
+        return None
     text = re.sub(r"\s+", " ", str(value)).strip()
     return text or None
 

@@ -29,6 +29,7 @@ SOURCE_NAMES = {
     "wind": "wind",
     "gunes": "solar",
     "solar": "solar",
+    "hidro": "hydro",
     "hidrolik": "hydro",
     "hidroelektrik": "hydro",
     "hes": "hydro",

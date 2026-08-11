@@ -1,4 +1,5 @@
 from io import BytesIO
+import re
 from typing import Any
 
 import pandas as pd
@@ -47,6 +48,7 @@ SOURCE_ALIASES = {
     "naphtha": "naphtha",
     "renew.+wastes + waste heat": "waste_and_biomass",
     "geotermal +wind": "geothermal_and_wind",
+    "thermal total": "thermal",
     "hydro+jeothermal+wind total": "hydro_geothermal_wind",
     "hydro+jeothermal+wind+solar total": "renewable_total",
     "total": "total",
@@ -65,8 +67,14 @@ def _frame(content: bytes, sheet_name: str | int | None = 0) -> pd.DataFrame:
 
 
 def _is_year(value: Any, minimum: int, maximum: int) -> bool:
+    if isinstance(value, str) and not re.fullmatch(r"\s*\d{4}(?:\.0+)?\s*", value):
+        return False
     parsed = number(value, 0)
     return parsed is not None and minimum <= parsed <= maximum and parsed.is_integer()
+
+
+def _cell(row: pd.Series, index: int) -> Any:
+    return row.iloc[index] if index < len(row) else None
 
 
 def parse_monthly_energy(content: bytes, year: int) -> list[dict[str, Any]]:
@@ -342,9 +350,9 @@ def parse_euas_thermal_plants(content: bytes) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
     current_source: str | None = None
     for _, row in df.iterrows():
-        if len(row) <= 18 or number(row.iloc[2], 0) is None:
+        if len(row) <= 17 or number(_cell(row, 2), 0) is None:
             continue
-        source_text = clean_text(row.iloc[4])
+        source_text = clean_text(_cell(row, 4))
         if source_text and source_text not in {'"', "'"} and normalize_key(source_text) not in {
             "lignite",
             "diesel oil",
@@ -355,13 +363,13 @@ def parse_euas_thermal_plants(content: bytes) -> list[dict[str, Any]]:
             current_source = aliases.get(normalize_key(source_text), source_text)
         records.append(
             {
-                "name": clean_text(row.iloc[3]),
+                "name": clean_text(_cell(row, 3)),
                 "plant_type": "thermal",
                 "source": current_source,
-                "province": clean_text(row.iloc[5]),
-                "installed_capacity_mw": number(row.iloc[16]),
-                "gross_generation_gwh": number(row.iloc[17]),
-                "project_generation_gwh": number(row.iloc[18]),
+                "province": clean_text(_cell(row, 5)),
+                "installed_capacity_mw": number(_cell(row, 16)),
+                "gross_generation_gwh": number(_cell(row, 17)),
+                "project_generation_gwh": number(_cell(row, 18)),
                 "reference_year": 2024,
             }
         )
@@ -372,18 +380,18 @@ def parse_euas_hydro_plants(content: bytes) -> list[dict[str, Any]]:
     df = _frame(content)
     records: list[dict[str, Any]] = []
     for _, row in df.iterrows():
-        if len(row) <= 20 or number(row.iloc[2], 0) is None:
+        if len(row) <= 18 or number(_cell(row, 2), 0) is None:
             continue
         records.append(
             {
-                "name": clean_text(row.iloc[4]),
+                "name": clean_text(_cell(row, 4)),
                 "plant_type": "hydro",
                 "source": "Hidroelektrik",
-                "province": clean_text(row.iloc[6]),
-                "installed_capacity_mw": number(row.iloc[17]),
-                "gross_generation_gwh": number(row.iloc[18]),
-                "average_project_generation_gwh": number(row.iloc[19]),
-                "firm_project_generation_gwh": number(row.iloc[20]),
+                "province": clean_text(_cell(row, 6)),
+                "installed_capacity_mw": number(_cell(row, 17)),
+                "gross_generation_gwh": number(_cell(row, 18)),
+                "average_project_generation_gwh": number(_cell(row, 19)),
+                "firm_project_generation_gwh": number(_cell(row, 20)),
                 "reference_year": 2024,
             }
         )

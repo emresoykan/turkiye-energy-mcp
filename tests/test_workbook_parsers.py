@@ -6,7 +6,9 @@ from turkiye_energy_mcp.parsers.workbooks import (
     parse_capacity_mix,
     parse_euas_hydro_plants,
     parse_euas_thermal_plants,
+    parse_generation_by_organization,
     parse_monthly_energy,
+    parse_monthly_euas_generation,
     parse_peak_demand,
 )
 
@@ -45,6 +47,26 @@ def test_teias_monthly_parser():
     ]
 
 
+def test_euas_monthly_parser_handles_blank_merged_cells():
+    frame = pd.DataFrame([[None] * 15 for _ in range(4)])
+    frame.iloc[0, 1] = "EÜAŞ"
+    frame.iloc[0, 2] = "HİDROLİK"
+    frame.iloc[1, 2] = "HYDRO"
+    frame.iloc[1, 3] = 10.5
+    frame.iloc[2, 2] = "TOTAL"
+    frame.iloc[2, 3] = 10.5
+    frame.iloc[3, 1] = "LİSANSSIZ SANTRALLER"
+    records = parse_monthly_euas_generation(
+        workbook_bytes(frame, "Kuruluşlara Göre"),
+        2026,
+    )
+    assert records[0] == {
+        "date": "2026-01",
+        "source": "hydro",
+        "generation_gwh": 10.5,
+    }
+
+
 def test_peak_parser_and_empty_dataset():
     frame = pd.DataFrame([[None] * 8 for _ in range(15)])
     frame.iloc[14] = [None, 2024, 116265.1, 58709.76, 57772.4, 353579.8, 550571.8, 478190.6]
@@ -77,3 +99,18 @@ def test_euas_hydro_parser():
     records = parse_euas_hydro_plants(workbook_bytes(frame))
     assert records[0]["plant_type"] == "hydro"
     assert records[0]["province"] == "Şanlıurfa"
+
+
+def test_year_parser_ignores_footnote_containing_a_year():
+    frame = pd.DataFrame([[None] * 12 for _ in range(2)])
+    frame.iloc[0, 1] = 2024
+    frame.iloc[0, 2] = 54_957.1
+    frame.iloc[0, 11] = 354_570.2
+    frame.iloc[1, 1] = "* Lisans Eylül 2008 tarihinde dönüştürülmüştür."
+    assert parse_generation_by_organization(workbook_bytes(frame)) == [
+        {
+            "year": 2024,
+            "euas_generation_gwh": 54957.1,
+            "turkey_generation_gwh": 354570.2,
+        }
+    ]

@@ -1,6 +1,7 @@
 import pytest
 
 from turkiye_energy_mcp.server import mcp, teias_get_monthly_energy
+from turkiye_energy_mcp.service import _canonical_source
 
 
 @pytest.mark.asyncio
@@ -23,3 +24,9 @@ async def test_tool_returns_structured_invalid_parameter_error():
         "message": "Başlangıç tarihi bitiş tarihinden büyük olamaz.",
         "source": None,
     }
+
+
+def test_turkish_source_aliases():
+    assert _canonical_source("hidro") == "hydro"
+    assert _canonical_source("rüzgar") == "wind"
+    assert _canonical_source("doğal gaz") == "natural_gas"
