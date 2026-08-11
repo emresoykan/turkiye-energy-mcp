@@ -105,14 +105,12 @@ def test_euas_thermal_parser_nulls_implausible_project_generation():
     assert record["installed_capacity_mw"] == 44
     assert record["gross_generation_gwh"] == 100
     assert record["project_generation_gwh"] is None
-    assert record["project_generation_suspect"] is True
+    assert record["project_generation_suspect"] is False
     assert record["_project_generation_dropped"] is True
     assert record["_project_generation_drop_reasons"] == [
         "project_generation_gwh_exceeds_capacity_ceiling",
     ]
-    assert record["_project_generation_suspect_reasons"] == [
-        "project_vs_gross_ratio_exceeds_3x"
-    ]
+    assert record["_project_generation_suspect_reasons"] == []
 
 
 def test_euas_hydro_parser():
@@ -137,6 +135,7 @@ def test_euas_hydro_parser():
     assert records[0]["gross_generation_gwh"] == 5456.5
     assert records[0]["average_project_generation_gwh"] is None
     assert records[0]["firm_project_generation_gwh"] is None
+    assert records[0]["project_generation_suspect"] is False
     assert records[0]["_project_generation_drop_reasons"] == [
         "source_project_generation_mapping_unverifiable"
     ]
