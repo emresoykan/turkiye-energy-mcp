@@ -5,7 +5,14 @@ from typing import Any
 import pandas as pd
 
 from ..exceptions import EnergyDataError, ErrorCode
-from .common import clean_text, normalize_key, number
+from .common import (
+    clean_text,
+    guard_project_generation,
+    logger,
+    normalize_key,
+    normalize_plant_name,
+    number,
+)
 
 MONTHS = [
     "01",
@@ -345,6 +352,16 @@ def parse_euas_generation_by_source(content: bytes) -> list[dict[str, Any]]:
     return result
 
 
+def _find_column(df: pd.DataFrame, *needles: str, default: int | None = None) -> int | None:
+    limit = min(12, len(df))
+    for row_index in range(limit):
+        for col_index, value in enumerate(df.iloc[row_index].tolist()):
+            text = normalize_key(str(value or ""))
+            if text and any(needle in text for needle in needles):
+                return col_index
+    return default
+
+
 def parse_euas_thermal_plants(
     content: bytes, reference_year: int | None = None
 ) -> list[dict[str, Any]]:
@@ -381,22 +398,66 @@ def parse_euas_thermal_plants(
 def parse_euas_hydro_plants(
     content: bytes, reference_year: int | None = None
 ) -> list[dict[str, Any]]:
+    """Parse TEİAŞ EÜAŞ hydro plant tables.
+
+    Capacity and gross generation are read from the plant identity row. Average /
+    firm project-generation cells in the same TEİAŞ workbook are sometimes
+    physically impossible for that row's MW; those values are guarded to None
+    instead of being returned as if they belonged to the plant.
+    """
     df = _frame(content)
+    name_col = _find_column(df, "santralin adi", "name of power plant", default=4) or 4
+    province_col = _find_column(df, "bulundugu il", "location", default=6) or 6
+    capacity_col = _find_column(df, "kurulu guc", "installed cap", default=17) or 17
+    gross_col = _find_column(df, "brut uretim", "gross generation", default=18) or 18
+    # Prefer explicit average/firm headers when present; fall back to classic layout.
+    average_col = _find_column(df, "ortalama", "average", default=19)
+    firm_col = _find_column(df, "guvenilir", "firm", default=20)
+    if average_col is None:
+        average_col = 19
+    if firm_col is None:
+        firm_col = 20
+
     records: list[dict[str, Any]] = []
+    logged_raw = 0
     for _, row in df.iterrows():
-        if len(row) <= 18 or number(_cell(row, 2), 0) is None:
+        if len(row) <= max(capacity_col, gross_col, name_col) or number(_cell(row, 2), 0) is None:
             continue
+        name = clean_text(_cell(row, name_col))
+        if not name:
+            continue
+        capacity_mw = number(_cell(row, capacity_col))
+        gross_generation_gwh = number(_cell(row, gross_col))
+        average_raw = number(_cell(row, average_col)) if average_col < len(row) else None
+        firm_raw = number(_cell(row, firm_col)) if firm_col < len(row) else None
+        if logged_raw < 8:
+            logger.debug(
+                "EUAS hydro raw row name=%s capacity_mw=%s gross_gwh=%s avg_raw=%s firm_raw=%s",
+                name,
+                capacity_mw,
+                gross_generation_gwh,
+                average_raw,
+                firm_raw,
+            )
+            logged_raw += 1
+        average_gwh, firm_gwh = guard_project_generation(
+            plant_name=name,
+            capacity_mw=capacity_mw,
+            average_gwh=average_raw,
+            firm_gwh=firm_raw,
+        )
         records.append(
             {
-                "name": clean_text(_cell(row, 4)),
+                "name": name,
+                "name_key": normalize_plant_name(name),
                 "plant_type": "hydro",
                 "source": "Hidroelektrik",
-                "province": clean_text(_cell(row, 6)),
-                "installed_capacity_mw": number(_cell(row, 17)),
-                "gross_generation_gwh": number(_cell(row, 18)),
-                "average_project_generation_gwh": number(_cell(row, 19)),
-                "firm_project_generation_gwh": number(_cell(row, 20)),
+                "province": clean_text(_cell(row, province_col)),
+                "installed_capacity_mw": capacity_mw,
+                "gross_generation_gwh": gross_generation_gwh,
+                "average_project_generation_gwh": average_gwh,
+                "firm_project_generation_gwh": firm_gwh,
                 "reference_year": reference_year,
             }
         )
-    return [record for record in records if record["name"]]
+    return records
