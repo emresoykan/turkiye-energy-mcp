@@ -101,40 +101,68 @@ def guard_project_generation(
     *,
     plant_name: str | None,
     capacity_mw: float | None,
+    gross_generation_gwh: float | None,
     average_gwh: float | None,
     firm_gwh: float | None,
-) -> tuple[float | None, float | None]:
-    """Drop physically impossible project-generation values.
+) -> tuple[float | None, float | None, list[str]]:
+    """Drop an entire suspicious project-generation record.
 
     TEİAŞ hydro workbooks sometimes publish average/firm project GWh cells that
-    exceed MW×8760/1000 for the same row. Those cells are nulled rather than
-    returned as if they belonged to the plant.
+    are inconsistent with the same row's MW or gross generation. If either
+    project field fails a check, both are nulled to avoid returning a partial,
+    internally inconsistent project-generation pair.
     """
     ceiling = annual_energy_ceiling_gwh(capacity_mw)
-    if ceiling is None:
-        return average_gwh, firm_gwh
+    reasons: list[str] = []
 
-    if average_gwh is not None and average_gwh > ceiling:
+    for field, value in (
+        ("average_project_generation_gwh", average_gwh),
+        ("firm_project_generation_gwh", firm_gwh),
+    ):
+        if value is not None and ceiling is not None and value > ceiling:
+            reasons.append(f"{field}_exceeds_capacity_ceiling")
+            logger.warning(
+                "Suspicious project generation for %s: %s=%s GWh exceeds "
+                "ceiling=%.3f GWh at %.3f MW",
+                plant_name,
+                field,
+                value,
+                ceiling,
+                capacity_mw,
+            )
+
+    if (
+        gross_generation_gwh is not None
+        and gross_generation_gwh >= 0
+        and average_gwh is not None
+        and average_gwh >= 0
+    ):
+        if gross_generation_gwh == 0 or average_gwh == 0:
+            ratio = float("inf") if gross_generation_gwh != average_gwh else 1.0
+        else:
+            ratio = max(
+                gross_generation_gwh / average_gwh,
+                average_gwh / gross_generation_gwh,
+            )
+        if ratio > 3:
+            reasons.append("average_vs_gross_ratio_exceeds_3x")
+            logger.warning(
+                "Suspicious project generation for %s: average=%s GWh and "
+                "gross=%s GWh differ by %.3fx",
+                plant_name,
+                average_gwh,
+                gross_generation_gwh,
+                ratio,
+            )
+
+    if reasons:
         logger.warning(
-            "Dropping implausible average_project_generation_gwh for %s: "
-            "value=%s GWh exceeds ceiling=%.3f GWh at %.3f MW",
+            "Dropping project-generation pair for %s: reasons=%s",
             plant_name,
-            average_gwh,
-            ceiling,
-            capacity_mw,
+            ",".join(reasons),
         )
-        average_gwh = None
-    if firm_gwh is not None and firm_gwh > ceiling:
-        logger.warning(
-            "Dropping implausible firm_project_generation_gwh for %s: "
-            "value=%s GWh exceeds ceiling=%.3f GWh at %.3f MW",
-            plant_name,
-            firm_gwh,
-            ceiling,
-            capacity_mw,
-        )
-        firm_gwh = None
-    return average_gwh, firm_gwh
+        return None, None, reasons
+    return average_gwh, firm_gwh, reasons
 
 
 def clean_text(value: Any) -> str | None:
