@@ -1,8 +1,8 @@
-from datetime import date
 from typing import Any
 
 from .clients.teias import TeiasClient, Workbook
 from .exceptions import EnergyDataError, ErrorCode
+from .freshness import classify_annual_freshness, classify_monthly_freshness
 from .models import dataset_response
 from .parsers.common import normalize_key, parse_date, parse_year_range
 from .parsers.workbooks import (
@@ -85,10 +85,73 @@ def _filter_years(
     return [record for record in records if start_year <= int(record["year"]) <= end_year]
 
 
-def _require_data(data: list[dict[str, Any]], message: str) -> list[dict[str, Any]]:
+def _require_data(
+    data: list[dict[str, Any]],
+    message: str,
+    *,
+    latest_available_period: str | None = None,
+    requested_period: str | None = None,
+) -> list[dict[str, Any]]:
     if not data:
-        raise EnergyDataError(ErrorCode.DATA_NOT_AVAILABLE, message, source="TEİAŞ")
+        raise EnergyDataError(
+            ErrorCode.DATA_NOT_AVAILABLE,
+            message,
+            source="TEİAŞ",
+            details={
+                "latest_available_period": latest_available_period,
+                "data_freshness": "unavailable",
+                "requested_period": requested_period,
+            },
+        )
     return data
+
+
+def _workbook_meta(*workbooks: Workbook) -> dict[str, Any]:
+    periods = [
+        workbook.latest_available_period
+        for workbook in workbooks
+        if workbook.latest_available_period
+    ]
+    publications = [workbook.published_at for workbook in workbooks if workbook.published_at]
+    names = [workbook.name for workbook in workbooks]
+    return {
+        "latest_available_period": max(periods) if periods else None,
+        "publication_date": max(publications) if publications else None,
+        "selected_source_name": " | ".join(names) if names else None,
+    }
+
+
+def _ensure_annual_overlap(
+    *,
+    requested_start: int,
+    requested_end: int,
+    latest_available_year: int,
+    series_years: list[int],
+) -> None:
+    if not series_years:
+        raise EnergyDataError(
+            ErrorCode.DATA_NOT_AVAILABLE,
+            "Seçilen resmi kaynakta yıllara göre veri bulunamadı.",
+            source="TEİAŞ",
+            details={
+                "latest_available_period": str(latest_available_year),
+                "data_freshness": "unavailable",
+                "requested_period": f"{requested_start}-{requested_end}",
+            },
+        )
+    series_start, series_end = min(series_years), max(series_years)
+    if requested_start > series_end or requested_end < series_start:
+        raise EnergyDataError(
+            ErrorCode.DATA_NOT_AVAILABLE,
+            "İstenen dönem, en güncel resmi serinin kapsadığı yılların dışında.",
+            source="TEİAŞ",
+            details={
+                "latest_available_period": str(latest_available_year),
+                "data_freshness": "unavailable",
+                "requested_period": f"{requested_start}-{requested_end}",
+                "series_period": f"{series_start}-{series_end}",
+            },
+        )
 
 
 class EnergyService:
@@ -96,20 +159,62 @@ class EnergyService:
         self.teias = teias
 
     async def _capacity_mix(self) -> tuple[list[dict[str, Any]], Workbook]:
-        workbook = await self.teias.annual_workbook("i-kurulu-guc", "9-")
+        workbook = await self.teias.annual_workbook("capacity_mix")
         return parse_capacity_mix(workbook.content), workbook
 
     async def _generation_mix(self) -> tuple[list[dict[str, Any]], Workbook]:
-        workbook = await self.teias.annual_workbook(
-            "iii-elektrik-enerjisi-uretimi-tuketimi-kayiplar", "63-"
-        )
+        workbook = await self.teias.annual_workbook("generation_mix")
         return parse_generation_mix(workbook.content), workbook
 
     async def _energy_balance(self) -> tuple[list[dict[str, Any]], Workbook]:
-        workbook = await self.teias.annual_workbook(
-            "iii-elektrik-enerjisi-uretimi-tuketimi-kayiplar", "48-"
-        )
+        workbook = await self.teias.annual_workbook("energy_balance")
         return parse_energy_balance(workbook.content), workbook
+
+    def _annual_response(
+        self,
+        *,
+        dataset: str,
+        data: list[dict[str, Any]],
+        workbooks: list[Workbook],
+        requested_start: int,
+        requested_end: int,
+        source_url: str | None = None,
+        source_format: str | None = None,
+        unit: str | None = None,
+        notes: str | None = None,
+        original_unit: str | None = None,
+        subject: str | None = None,
+        extra_meta: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        meta = _workbook_meta(*workbooks)
+        latest_year = int(meta["latest_available_period"] or max(item["year"] for item in data))
+        freshness = classify_annual_freshness(
+            requested_start=requested_start,
+            requested_end=requested_end,
+            latest_available_year=latest_year,
+            returned_years=[int(item["year"]) for item in data],
+        )
+        payload = dataset_response(
+            source="TEİAŞ",
+            subject=subject,
+            dataset=dataset,
+            data=data,
+            source_url=source_url or workbooks[0].source_url,
+            source_format=source_format
+            or "/".join(sorted({workbook.source_format for workbook in workbooks})),
+            frequency="annual",
+            start_date=str(requested_start),
+            end_date=str(requested_end),
+            unit=unit,
+            original_unit=original_unit,
+            notes=notes,
+            latest_available_period=meta["latest_available_period"],
+            data_freshness=freshness,
+            publication_date=meta["publication_date"],
+            selected_source_name=meta["selected_source_name"],
+            **(extra_meta or {}),
+        )
+        return payload
 
     async def get_monthly_energy(
         self,
@@ -124,12 +229,6 @@ class EnergyService:
                 ErrorCode.INVALID_PARAMETER,
                 "Başlangıç tarihi bitiş tarihinden büyük olamaz.",
             )
-        if start.year < 2019:
-            raise EnergyDataError(
-                ErrorCode.DATA_NOT_AVAILABLE,
-                "TEİAŞ aylık çalışma kitapları 2019 yılından başlıyor.",
-                source="TEİAŞ",
-            )
 
         metric_key = _canonical_source(metric)
         metric_aliases = {
@@ -142,36 +241,56 @@ class EnergyService:
         }
         metric_key = metric_aliases.get(normalize_key(metric or ""), metric_key)
         data: list[dict[str, Any]] = []
-        sources: list[str] = []
-        formats: set[str] = set()
+        workbooks: list[Workbook] = []
         for year in range(start.year, end.year + 1):
             workbook = await self.teias.monthly_workbook(year)
-            sources.append(workbook.source_url)
-            formats.add(workbook.source_format)
+            workbooks.append(workbook)
             data.extend(parse_monthly_energy(workbook.content, year))
 
         start_month = start.strftime("%Y-%m")
         end_month = end.strftime("%Y-%m")
-        data = [
+        filtered = [
             record
             for record in data
             if start_month <= record["date"] <= end_month
             and (metric_key is None or record["metric"] == metric_key)
         ]
-        _require_data(data, "Belirtilen dönem ve metrik için aylık veri bulunamadı.")
+        meta = _workbook_meta(*workbooks)
+        latest_period = meta["latest_available_period"]
+        if not filtered:
+            raise EnergyDataError(
+                ErrorCode.DATA_NOT_AVAILABLE,
+                "Belirtilen dönem ve metrik için aylık veri bulunamadı.",
+                source="TEİAŞ",
+                details={
+                    "latest_available_period": latest_period,
+                    "data_freshness": "unavailable",
+                    "requested_period": f"{start_month}/{end_month}",
+                },
+            )
+        freshness = classify_monthly_freshness(
+            requested_start=start,
+            requested_end=end,
+            latest_available_period=latest_period,
+            returned_periods=[record["date"] for record in filtered],
+        )
         return dataset_response(
             source="TEİAŞ",
             dataset="monthly_energy",
-            data=data,
+            data=filtered,
             source_url=MONTHLY_PAGE,
-            source_format="/".join(sorted(formats)),
+            source_format="/".join(sorted({workbook.source_format for workbook in workbooks})),
             frequency="monthly",
             start_date=start.isoformat(),
             end_date=end.isoformat(),
             unit="GWh",
             original_unit="GWh",
             notes="Cari yıl değerleri TEİAŞ tarafından geçici olarak işaretlenebilir.",
-            input_sources=sources,
+            latest_available_period=latest_period,
+            data_freshness=freshness,
+            publication_date=meta["publication_date"],
+            selected_source_name=meta["selected_source_name"],
+            input_sources=[workbook.source_url for workbook in workbooks],
         )
 
     async def get_generation(
@@ -182,6 +301,13 @@ class EnergyService:
     ) -> dict[str, Any]:
         start_year, end_year = parse_year_range(start_year, end_year)
         records, workbook = await self._generation_mix()
+        latest = workbook.period_end or max(item["year"] for item in records)
+        _ensure_annual_overlap(
+            requested_start=start_year,
+            requested_end=end_year,
+            latest_available_year=latest,
+            series_years=[item["year"] for item in records],
+        )
         source_key = _canonical_source(source)
         if source_key == "geothermal":
             source_key = "geothermal_and_wind"
@@ -190,20 +316,22 @@ class EnergyService:
             for record in _filter_years(records, start_year, end_year)
             if source_key is None or record["source"] == source_key
         ]
-        _require_data(data, "Belirtilen yıllar veya kaynak için üretim verisi bulunamadı.")
-        return dataset_response(
-            source="TEİAŞ",
+        _require_data(
+            data,
+            "Belirtilen yıllar veya kaynak için üretim verisi bulunamadı.",
+            latest_available_period=str(latest),
+            requested_period=f"{start_year}-{end_year}",
+        )
+        return self._annual_response(
             dataset="generation_by_source",
             data=data,
-            source_url=workbook.source_url,
-            source_format=workbook.source_format,
-            frequency="annual",
-            start_date=str(start_year),
-            end_date=str(end_year),
+            workbooks=[workbook],
+            requested_start=start_year,
+            requested_end=end_year,
             unit="GWh",
             original_unit="GWh",
             notes=(
-                "2000-2024 tablosunda jeotermal ve rüzgâr tek sütunda birleştirilmiştir; "
+                "En güncel resmi tabloda jeotermal ve rüzgâr tek sütunda birleştirilmiş olabilir; "
                 "kaynak='jeotermal' sorgusu birleşik seriyi döndürür."
             ),
         )
@@ -216,43 +344,59 @@ class EnergyService:
     ) -> dict[str, Any]:
         start_year, end_year = parse_year_range(start_year, end_year)
         records, workbook = await self._capacity_mix()
+        latest = workbook.period_end or max(item["year"] for item in records)
+        _ensure_annual_overlap(
+            requested_start=start_year,
+            requested_end=end_year,
+            latest_available_year=latest,
+            series_years=[item["year"] for item in records],
+        )
         source_key = _canonical_source(source)
         data = [
             record
             for record in _filter_years(records, start_year, end_year)
             if source_key is None or record["source"] == source_key
         ]
-        _require_data(data, "Belirtilen yıllar veya kaynak için kurulu güç verisi bulunamadı.")
-        return dataset_response(
-            source="TEİAŞ",
+        _require_data(
+            data,
+            "Belirtilen yıllar veya kaynak için kurulu güç verisi bulunamadı.",
+            latest_available_period=str(latest),
+            requested_period=f"{start_year}-{end_year}",
+        )
+        return self._annual_response(
             dataset="installed_capacity_by_source",
             data=data,
-            source_url=workbook.source_url,
-            source_format=workbook.source_format,
-            frequency="annual",
-            start_date=str(start_year),
-            end_date=str(end_year),
+            workbooks=[workbook],
+            requested_start=start_year,
+            requested_end=end_year,
             unit="MW",
             original_unit="MW",
         )
 
     async def get_peak_demand(self, start_year: int, end_year: int) -> dict[str, Any]:
         start_year, end_year = parse_year_range(start_year, end_year)
-        workbook = await self.teias.annual_workbook(
-            "ii-turkiye-kurulu-gucunun-kullanim-degerleri", "26-"
+        workbook = await self.teias.annual_workbook("peak_demand")
+        records = parse_peak_demand(workbook.content)
+        latest = workbook.period_end or max(item["year"] for item in records)
+        _ensure_annual_overlap(
+            requested_start=start_year,
+            requested_end=end_year,
+            latest_available_year=latest,
+            series_years=[item["year"] for item in records],
         )
-        data = _filter_years(parse_peak_demand(workbook.content), start_year, end_year)
-        _require_data(data, "Belirtilen yıllar için puant verisi bulunamadı.")
-        return dataset_response(
-            source="TEİAŞ",
+        data = _filter_years(records, start_year, end_year)
+        _require_data(
+            data,
+            "Belirtilen yıllar için puant verisi bulunamadı.",
+            latest_available_period=str(latest),
+            requested_period=f"{start_year}-{end_year}",
+        )
+        return self._annual_response(
             dataset="peak_demand",
             data=data,
-            source_url=workbook.source_url,
-            source_format=workbook.source_format,
-            frequency="annual",
-            start_date=str(start_year),
-            end_date=str(end_year),
-            unit=None,
+            workbooks=[workbook],
+            requested_start=start_year,
+            requested_end=end_year,
             notes="MW güç ve GWh enerji alanları ayrı adlandırılmıştır.",
         )
 
@@ -264,6 +408,13 @@ class EnergyService:
     ) -> dict[str, Any]:
         start_year, end_year = parse_year_range(start_year, end_year)
         records, workbook = await self._energy_balance()
+        latest = workbook.period_end or max(item["year"] for item in records)
+        _ensure_annual_overlap(
+            requested_start=start_year,
+            requested_end=end_year,
+            latest_available_year=latest,
+            series_years=[item["year"] for item in records],
+        )
         records = _filter_years(records, start_year, end_year)
         country_key = None
         if country:
@@ -290,16 +441,18 @@ class EnergyService:
                 )
             else:
                 data.append(record)
-        _require_data(data, "Belirtilen yıllar için ithalat/ihracat verisi bulunamadı.")
-        return dataset_response(
-            source="TEİAŞ",
+        _require_data(
+            data,
+            "Belirtilen yıllar için ithalat/ihracat verisi bulunamadı.",
+            latest_available_period=str(latest),
+            requested_period=f"{start_year}-{end_year}",
+        )
+        return self._annual_response(
             dataset="import_export",
             data=data,
-            source_url=workbook.source_url,
-            source_format=workbook.source_format,
-            frequency="annual",
-            start_date=str(start_year),
-            end_date=str(end_year),
+            workbooks=[workbook],
+            requested_start=start_year,
+            requested_end=end_year,
             unit="GWh",
             original_unit="GWh",
         )
@@ -308,41 +461,59 @@ class EnergyService:
         self, start_year: int, end_year: int
     ) -> dict[str, Any]:
         start_year, end_year = parse_year_range(start_year, end_year)
-        lines = await self.teias.annual_workbook(
-            "vi-enerji-nakil-hat-ve-trafolari", "95-"
+        lines = await self.teias.annual_workbook("transmission_lines")
+        transformers = await self.teias.annual_workbook("transformers")
+        line_records = parse_transmission_lines(lines.content)
+        transformer_records = parse_transformers(transformers.content)
+        latest = max(
+            value
+            for value in (
+                lines.period_end,
+                transformers.period_end,
+                max((item["year"] for item in line_records), default=None),
+                max((item["year"] for item in transformer_records), default=None),
+            )
+            if value is not None
         )
-        transformers = await self.teias.annual_workbook(
-            "vi-enerji-nakil-hat-ve-trafolari", "98-"
+        series_years = sorted(
+            {item["year"] for item in line_records}
+            | {item["year"] for item in transformer_records}
+        )
+        _ensure_annual_overlap(
+            requested_start=start_year,
+            requested_end=end_year,
+            latest_available_year=latest,
+            series_years=series_years,
         )
         line_data = {
             record["year"]: record
-            for record in _filter_years(
-                parse_transmission_lines(lines.content), start_year, end_year
-            )
+            for record in _filter_years(line_records, start_year, end_year)
         }
         transformer_data = {
             record["year"]: record
-            for record in _filter_years(
-                parse_transformers(transformers.content), start_year, end_year
-            )
+            for record in _filter_years(transformer_records, start_year, end_year)
         }
         data = [
             {**line_data.get(year, {}), **transformer_data.get(year, {}), "year": year}
             for year in sorted(set(line_data) | set(transformer_data))
         ]
-        _require_data(data, "Belirtilen yıllar için iletim istatistiği bulunamadı.")
-        return dataset_response(
-            source="TEİAŞ",
+        _require_data(
+            data,
+            "Belirtilen yıllar için iletim istatistiği bulunamadı.",
+            latest_available_period=str(latest),
+            requested_period=f"{start_year}-{end_year}",
+        )
+        return self._annual_response(
             dataset="transmission_statistics",
             data=data,
+            workbooks=[lines, transformers],
+            requested_start=start_year,
+            requested_end=end_year,
             source_url=ANNUAL_PAGE,
-            source_format=f"{lines.source_format}/{transformers.source_format}",
-            frequency="annual",
-            start_date=str(start_year),
-            end_date=str(end_year),
-            unit=None,
             notes="Hat uzunlukları km, trafo kapasiteleri MVA'dır.",
-            input_sources=[lines.source_url, transformers.source_url],
+            extra_meta={
+                "input_sources": [lines.source_url, transformers.source_url],
+            },
         )
 
     async def get_renewable_summary(
@@ -351,6 +522,24 @@ class EnergyService:
         start_year, end_year = parse_year_range(start_year, end_year)
         capacity, capacity_workbook = await self._capacity_mix()
         generation, generation_workbook = await self._generation_mix()
+        latest = max(
+            value
+            for value in (
+                capacity_workbook.period_end,
+                generation_workbook.period_end,
+                max((item["year"] for item in capacity), default=None),
+                max((item["year"] for item in generation), default=None),
+            )
+            if value is not None
+        )
+        _ensure_annual_overlap(
+            requested_start=start_year,
+            requested_end=end_year,
+            latest_available_year=latest,
+            series_years=sorted(
+                {item["year"] for item in capacity} & {item["year"] for item in generation}
+            ),
+        )
         capacity_by_year: dict[int, dict[str, float]] = {}
         for item in _filter_years(capacity, start_year, end_year):
             capacity_by_year.setdefault(item["year"], {})[item["source"]] = item["capacity_mw"]
@@ -384,27 +573,42 @@ class EnergyService:
                     ),
                 }
             )
-        _require_data(data, "Belirtilen yıllar için yenilenebilir özeti hesaplanamadı.")
-        return dataset_response(
-            source="TEİAŞ",
+        _require_data(
+            data,
+            "Belirtilen yıllar için yenilenebilir özeti hesaplanamadı.",
+            latest_available_period=str(latest),
+            requested_period=f"{start_year}-{end_year}",
+        )
+        return self._annual_response(
             dataset="renewable_summary",
             data=data,
+            workbooks=[capacity_workbook, generation_workbook],
+            requested_start=start_year,
+            requested_end=end_year,
             source_url=ANNUAL_PAGE,
-            source_format=f"{capacity_workbook.source_format}/{generation_workbook.source_format}",
-            frequency="annual",
-            start_date=str(start_year),
-            end_date=str(end_year),
-            unit=None,
             notes="Paylar TEİAŞ kaynak ve toplam sütunlarından hesaplanmıştır.",
-            input_sources=[capacity_workbook.source_url, generation_workbook.source_url],
+            extra_meta={
+                "input_sources": [
+                    capacity_workbook.source_url,
+                    generation_workbook.source_url,
+                ],
+            },
         )
 
     async def get_system_summary(self, year: int) -> dict[str, Any]:
         parse_year_range(year, year)
         capacity, capacity_workbook = await self._capacity_mix()
         balance, balance_workbook = await self._energy_balance()
-        peak_workbook = await self.teias.annual_workbook(
-            "ii-turkiye-kurulu-gucunun-kullanim-degerleri", "26-"
+        peak_workbook = await self.teias.annual_workbook("peak_demand")
+        peak_records = parse_peak_demand(peak_workbook.content)
+        latest = max(
+            value
+            for value in (
+                capacity_workbook.period_end,
+                balance_workbook.period_end,
+                peak_workbook.period_end,
+            )
+            if value is not None
         )
         capacity_total = next(
             (
@@ -415,15 +619,17 @@ class EnergyService:
             None,
         )
         balance_item = next((item for item in balance if item["year"] == year), None)
-        peak_item = next(
-            (item for item in parse_peak_demand(peak_workbook.content) if item["year"] == year),
-            None,
-        )
+        peak_item = next((item for item in peak_records if item["year"] == year), None)
         if capacity_total is None or balance_item is None or peak_item is None:
             raise EnergyDataError(
                 ErrorCode.DATA_NOT_AVAILABLE,
                 "Belirtilen yıl için eksiksiz sistem özeti bulunamadı.",
                 source="TEİAŞ",
+                details={
+                    "latest_available_period": str(latest),
+                    "data_freshness": "unavailable",
+                    "requested_period": str(year),
+                },
             )
         data = [
             {
@@ -438,30 +644,52 @@ class EnergyService:
                 "hourly_peak_mw": peak_item["hourly_peak_mw"],
             }
         ]
-        return dataset_response(
-            source="TEİAŞ",
+        return self._annual_response(
             dataset="system_summary",
             data=data,
+            workbooks=[capacity_workbook, balance_workbook, peak_workbook],
+            requested_start=year,
+            requested_end=year,
             source_url=ANNUAL_PAGE,
             source_format="xls/xlsx",
-            frequency="annual",
-            start_date=str(year),
-            end_date=str(year),
-            unit=None,
-            input_sources=[
-                capacity_workbook.source_url,
-                balance_workbook.source_url,
-                peak_workbook.source_url,
-            ],
+            extra_meta={
+                "input_sources": [
+                    capacity_workbook.source_url,
+                    balance_workbook.source_url,
+                    peak_workbook.source_url,
+                ],
+            },
         )
 
     async def _euas_plants(self) -> tuple[list[dict[str, Any]], list[Workbook]]:
-        thermal = await self.teias.annual_workbook("i-kurulu-guc", "18-")
-        hydro = await self.teias.annual_workbook("i-kurulu-guc", "19-")
-        records = parse_euas_thermal_plants(thermal.content) + parse_euas_hydro_plants(
-            hydro.content
+        thermal_books = await self.teias.annual_workbooks("euas_thermal_plants")
+        hydro_books = await self.teias.annual_workbooks("euas_hydro_plants")
+        workbooks = thermal_books + hydro_books
+        reference_year = max(
+            (workbook.period_end for workbook in workbooks if workbook.period_end),
+            default=None,
         )
-        return records, [thermal, hydro]
+        records: list[dict[str, Any]] = []
+        seen: set[tuple[str | None, str | None]] = set()
+        for workbook in thermal_books:
+            for record in parse_euas_thermal_plants(
+                workbook.content, reference_year=reference_year
+            ):
+                key = (record.get("name"), record.get("plant_type"))
+                if key in seen:
+                    continue
+                seen.add(key)
+                records.append(record)
+        for workbook in hydro_books:
+            for record in parse_euas_hydro_plants(
+                workbook.content, reference_year=reference_year
+            ):
+                key = (record.get("name"), record.get("plant_type"))
+                if key in seen:
+                    continue
+                seen.add(key)
+                records.append(record)
+        return records, workbooks
 
     async def get_euas_power_plants(
         self,
@@ -484,7 +712,13 @@ class EnergyService:
             if (not type_key or record["plant_type"] == type_key)
             and (not province_key or province_key in normalize_key(record["province"] or ""))
         ]
-        _require_data(data, "Filtrelere uyan EÜAŞ santrali bulunamadı.")
+        meta = _workbook_meta(*workbooks)
+        period = meta["latest_available_period"]
+        _require_data(
+            data,
+            "Filtrelere uyan EÜAŞ santrali bulunamadı.",
+            latest_available_period=period,
+        )
         data.sort(key=lambda item: item.get("installed_capacity_mw") or 0, reverse=True)
         return dataset_response(
             source="TEİAŞ",
@@ -494,13 +728,17 @@ class EnergyService:
             source_url=ANNUAL_PAGE,
             source_format="xls",
             frequency="annual",
-            start_date="2024",
-            end_date="2024",
+            start_date=period,
+            end_date=period,
             unit=None,
             notes=(
-                "TEİAŞ'ın EÜAŞ termik/hidrolik santral tabloları kullanılmıştır. "
+                "TEİAŞ'ın en güncel EÜAŞ termik/hidrolik santral tabloları kullanılmıştır. "
                 "Çalışma kitabındaki güvenilir olmayan ünite ve devreye giriş hücreleri yayımlanmaz."
             ),
+            latest_available_period=period,
+            data_freshness="current",
+            publication_date=meta["publication_date"],
+            selected_source_name=meta["selected_source_name"],
             input_sources=[workbook.source_url for workbook in workbooks],
         )
 
@@ -514,7 +752,11 @@ class EnergyService:
         result["data"] = [
             item for item in result["data"] if needle in normalize_key(item["name"])
         ]
-        _require_data(result["data"], "EÜAŞ santral adı bulunamadı.")
+        _require_data(
+            result["data"],
+            "EÜAŞ santral adı bulunamadı.",
+            latest_available_period=result["metadata"].get("latest_available_period"),
+        )
         result["dataset"] = "power_plant"
         return result
 
@@ -522,21 +764,29 @@ class EnergyService:
         self, start_year: int, end_year: int
     ) -> dict[str, Any]:
         start_year, end_year = parse_year_range(start_year, end_year)
-        workbook = await self.teias.annual_workbook("i-kurulu-guc", "13-")
-        data = _filter_years(
-            parse_capacity_by_organization(workbook.content), start_year, end_year
+        workbook = await self.teias.annual_workbook("capacity_by_organization")
+        records = parse_capacity_by_organization(workbook.content)
+        latest = workbook.period_end or max(item["year"] for item in records)
+        _ensure_annual_overlap(
+            requested_start=start_year,
+            requested_end=end_year,
+            latest_available_year=latest,
+            series_years=[item["year"] for item in records],
         )
-        _require_data(data, "Belirtilen yıllar için EÜAŞ kurulu güç verisi bulunamadı.")
-        return dataset_response(
-            source="TEİAŞ",
-            subject="EÜAŞ",
+        data = _filter_years(records, start_year, end_year)
+        _require_data(
+            data,
+            "Belirtilen yıllar için EÜAŞ kurulu güç verisi bulunamadı.",
+            latest_available_period=str(latest),
+            requested_period=f"{start_year}-{end_year}",
+        )
+        return self._annual_response(
             dataset="installed_capacity",
             data=data,
-            source_url=workbook.source_url,
-            source_format=workbook.source_format,
-            frequency="annual",
-            start_date=str(start_year),
-            end_date=str(end_year),
+            workbooks=[workbook],
+            requested_start=start_year,
+            requested_end=end_year,
+            subject="EÜAŞ",
             unit="MW",
             original_unit="MW",
         )
@@ -546,47 +796,54 @@ class EnergyService:
     ) -> dict[str, Any]:
         start_year, end_year = parse_year_range(start_year, end_year)
         if source:
-            workbook = await self.teias.annual_workbook(
-                "iii-elektrik-enerjisi-uretimi-tuketimi-kayiplar", "71-"
-            )
+            workbook = await self.teias.annual_workbook("euas_generation_by_source")
             source_key = _canonical_source(source)
             if source_key == "hydro":
                 source_key = "hydro_geothermal_wind"
+            records = parse_euas_generation_by_source(workbook.content)
+            latest = workbook.period_end or max(item["year"] for item in records)
+            _ensure_annual_overlap(
+                requested_start=start_year,
+                requested_end=end_year,
+                latest_available_year=latest,
+                series_years=[item["year"] for item in records],
+            )
             data = [
                 item
-                for item in _filter_years(
-                    parse_euas_generation_by_source(workbook.content),
-                    start_year,
-                    end_year,
-                )
+                for item in _filter_years(records, start_year, end_year)
                 if item["source"] == source_key
             ]
             notes = (
                 "TEİAŞ tablosunda EÜAŞ hidro, jeotermal ve rüzgâr üretimi birleşik sütundur."
             )
         else:
-            workbook = await self.teias.annual_workbook(
-                "iii-elektrik-enerjisi-uretimi-tuketimi-kayiplar", "73-"
-            )
-            data = _filter_years(
-                parse_generation_by_organization(workbook.content), start_year, end_year
+            workbook = await self.teias.annual_workbook("generation_by_organization")
+            records = parse_generation_by_organization(workbook.content)
+            latest = workbook.period_end or max(item["year"] for item in records)
+            _ensure_annual_overlap(
+                requested_start=start_year,
+                requested_end=end_year,
+                latest_available_year=latest,
+                series_years=[item["year"] for item in records],
             )
             data = [
                 {"year": item["year"], "generation_gwh": item["euas_generation_gwh"]}
-                for item in data
+                for item in _filter_years(records, start_year, end_year)
             ]
             notes = None
-        _require_data(data, "Belirtilen yıllar/kaynak için EÜAŞ üretim verisi bulunamadı.")
-        return dataset_response(
-            source="TEİAŞ",
-            subject="EÜAŞ",
+        _require_data(
+            data,
+            "Belirtilen yıllar/kaynak için EÜAŞ üretim verisi bulunamadı.",
+            latest_available_period=str(latest),
+            requested_period=f"{start_year}-{end_year}",
+        )
+        return self._annual_response(
             dataset="generation",
             data=data,
-            source_url=workbook.source_url,
-            source_format=workbook.source_format,
-            frequency="annual",
-            start_date=str(start_year),
-            end_date=str(end_year),
+            workbooks=[workbook],
+            requested_start=start_year,
+            requested_end=end_year,
+            subject="EÜAŞ",
             unit="GWh",
             original_unit="GWh",
             notes=notes,
@@ -603,25 +860,38 @@ class EnergyService:
                 "Başlangıç tarihi bitiş tarihinden büyük olamaz.",
             )
         data: list[dict[str, Any]] = []
-        sources: list[str] = []
+        workbooks: list[Workbook] = []
         source_key = _canonical_source(source)
         for year in range(start.year, end.year + 1):
             workbook = await self.teias.monthly_workbook(year)
-            sources.append(workbook.source_url)
+            workbooks.append(workbook)
             data.extend(parse_monthly_euas_generation(workbook.content, year))
         start_month, end_month = start.strftime("%Y-%m"), end.strftime("%Y-%m")
-        data = [
+        filtered = [
             item
             for item in data
             if start_month <= item["date"] <= end_month
             and (source_key is None or item["source"] == source_key)
         ]
-        _require_data(data, "Belirtilen dönem için aylık EÜAŞ üretimi bulunamadı.")
+        meta = _workbook_meta(*workbooks)
+        latest_period = meta["latest_available_period"]
+        _require_data(
+            filtered,
+            "Belirtilen dönem için aylık EÜAŞ üretimi bulunamadı.",
+            latest_available_period=latest_period,
+            requested_period=f"{start_month}/{end_month}",
+        )
+        freshness = classify_monthly_freshness(
+            requested_start=start,
+            requested_end=end,
+            latest_available_period=latest_period,
+            returned_periods=[item["date"] for item in filtered],
+        )
         return dataset_response(
             source="TEİAŞ",
             subject="EÜAŞ",
             dataset="monthly_generation",
-            data=data,
+            data=filtered,
             source_url=MONTHLY_PAGE,
             source_format="xlsx",
             frequency="monthly",
@@ -629,24 +899,38 @@ class EnergyService:
             end_date=end.isoformat(),
             unit="GWh",
             original_unit="GWh",
-            input_sources=sources,
+            latest_available_period=latest_period,
+            data_freshness=freshness,
+            publication_date=meta["publication_date"],
+            selected_source_name=meta["selected_source_name"],
+            input_sources=[workbook.source_url for workbook in workbooks],
         )
 
     async def get_euas_capacity_share(
         self, start_year: int, end_year: int
     ) -> dict[str, Any]:
         start_year, end_year = parse_year_range(start_year, end_year)
-        euas_workbook = await self.teias.annual_workbook("i-kurulu-guc", "13-")
+        euas_workbook = await self.teias.annual_workbook("capacity_by_organization")
         turkey, turkey_workbook = await self._capacity_mix()
-        euas = {
-            item["year"]: item["total_mw"]
-            for item in parse_capacity_by_organization(euas_workbook.content)
-        }
+        euas_records = parse_capacity_by_organization(euas_workbook.content)
+        latest = max(
+            value
+            for value in (euas_workbook.period_end, turkey_workbook.period_end)
+            if value is not None
+        )
+        euas = {item["year"]: item["total_mw"] for item in euas_records}
         totals = {
             item["year"]: item["capacity_mw"]
             for item in turkey
             if item["source"] == "total"
         }
+        series_years = sorted(set(euas) & set(totals))
+        _ensure_annual_overlap(
+            requested_start=start_year,
+            requested_end=end_year,
+            latest_available_year=latest,
+            series_years=series_years,
+        )
         data = [
             {
                 "year": year,
@@ -657,32 +941,41 @@ class EnergyService:
             for year in range(start_year, end_year + 1)
             if year in euas and year in totals
         ]
-        _require_data(data, "Belirtilen yıllar için EÜAŞ kapasite payı hesaplanamadı.")
-        return dataset_response(
-            source="TEİAŞ",
-            subject="EÜAŞ",
+        _require_data(
+            data,
+            "Belirtilen yıllar için EÜAŞ kapasite payı hesaplanamadı.",
+            latest_available_period=str(latest),
+            requested_period=f"{start_year}-{end_year}",
+        )
+        return self._annual_response(
             dataset="share_of_installed_capacity",
             data=data,
+            workbooks=[euas_workbook, turkey_workbook],
+            requested_start=start_year,
+            requested_end=end_year,
+            subject="EÜAŞ",
             source_url=ANNUAL_PAGE,
-            source_format="xls",
-            frequency="annual",
-            start_date=str(start_year),
-            end_date=str(end_year),
             unit="percent",
             notes="Pay, aynı TEİAŞ raporundaki EÜAŞ ve Türkiye toplamlarından hesaplanmıştır.",
-            input_sources=[euas_workbook.source_url, turkey_workbook.source_url],
+            extra_meta={
+                "input_sources": [euas_workbook.source_url, turkey_workbook.source_url],
+            },
         )
 
     async def get_euas_generation_share(
         self, start_year: int, end_year: int
     ) -> dict[str, Any]:
         start_year, end_year = parse_year_range(start_year, end_year)
-        workbook = await self.teias.annual_workbook(
-            "iii-elektrik-enerjisi-uretimi-tuketimi-kayiplar", "73-"
+        workbook = await self.teias.annual_workbook("generation_by_organization")
+        records = parse_generation_by_organization(workbook.content)
+        latest = workbook.period_end or max(item["year"] for item in records)
+        _ensure_annual_overlap(
+            requested_start=start_year,
+            requested_end=end_year,
+            latest_available_year=latest,
+            series_years=[item["year"] for item in records],
         )
-        rows = _filter_years(
-            parse_generation_by_organization(workbook.content), start_year, end_year
-        )
+        rows = _filter_years(records, start_year, end_year)
         data = [
             {
                 "year": row["year"],
@@ -694,17 +987,19 @@ class EnergyService:
             }
             for row in rows
         ]
-        _require_data(data, "Belirtilen yıllar için EÜAŞ üretim payı hesaplanamadı.")
-        return dataset_response(
-            source="TEİAŞ",
-            subject="EÜAŞ",
+        _require_data(
+            data,
+            "Belirtilen yıllar için EÜAŞ üretim payı hesaplanamadı.",
+            latest_available_period=str(latest),
+            requested_period=f"{start_year}-{end_year}",
+        )
+        return self._annual_response(
             dataset="share_of_generation",
             data=data,
-            source_url=workbook.source_url,
-            source_format=workbook.source_format,
-            frequency="annual",
-            start_date=str(start_year),
-            end_date=str(end_year),
+            workbooks=[workbook],
+            requested_start=start_year,
+            requested_end=end_year,
+            subject="EÜAŞ",
             unit="percent",
             notes="Pay, aynı TEİAŞ üretici kuruluş tablosundan hesaplanmıştır.",
         )

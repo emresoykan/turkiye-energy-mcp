@@ -99,7 +99,10 @@ MCP_TRANSPORT=stdio turkiye-energy-mcp
 | `CACHE_PLANTS_TTL_SECONDS` | `86400` | Santral cache süresi |
 | `TEIAS_BASE_URL` | resmî TEİAŞ URL | JSON katalog kökü |
 | `TEIAS_FILE_BASE_URL` | resmî TEİAŞ dosya URL | Dosya indirme kökü |
-| `TEIAS_ANNUAL_REPORT_YEAR` | `2024` | En yeni kesinleşmiş yıllık rapor |
+
+Yıllık/aylık kaynak seçimi sabit yıl veya sabit dosya adına bağlı değildir.
+Sunucu TEİAŞ galeri kataloğundan en yeni yayın tarihli ve en güncel dönemi kapsayan
+resmî dosyayı otomatik seçer.
 
 Tüm örnekler `.env.example` içindedir.
 
@@ -162,10 +165,19 @@ açık alan adlarıyla döner.
     "source_format": "xls",
     "frequency": "annual",
     "notes": null,
-    "original_unit": "MW"
+    "original_unit": "MW",
+    "latest_available_period": "2024",
+    "data_freshness": "current",
+    "publication_date": "2026-01-15T12:06:51+00:00",
+    "selected_source_name": "13-Yıllar İtibariyle ... (2006-2024).xls"
   }
 }
 ```
+
+`data_freshness` değerleri: `current`, `provisional`, `historical`, `partial`,
+`unavailable`. İstenen güncel dönem yoksa eski veri sessizce güncel gibi
+döndürülmez; `latest_available_period` ve `data_freshness` açıkça verilir veya
+hata detayında yer alır.
 
 Hatalar traceback yerine:
 
@@ -174,7 +186,12 @@ Hatalar traceback yerine:
   "error": true,
   "code": "DATA_NOT_AVAILABLE",
   "message": "Belirtilen dönem için veri bulunamadı.",
-  "source": "TEİAŞ"
+  "source": "TEİAŞ",
+  "details": {
+    "latest_available_period": "2024",
+    "data_freshness": "unavailable",
+    "requested_period": "2027"
+  }
 }
 ```
 
@@ -247,16 +264,16 @@ Claude Desktop local stdio config:
 
 | Veri seti | Resmî sayfa | Sıklık | Derinlik |
 |---|---|---|---|
-| Aylık üretim/talep | [Aylık raporlar](https://www.teias.gov.tr/aylik-elektrik-uretim-tuketim-raporlari) | Aylık | 2019-günümüz |
-| Kaynak bazlı üretim | [Yıllık istatistikler](https://www.teias.gov.tr/turkiye-elektrik-uretim-iletim-istatistikleri) | Yıllık | 2000-2024 |
-| Kaynak bazlı kurulu güç | aynı | Yıllık | 2006-2024 |
-| Puant/talep | aynı | Yıllık | 1980-2024 |
-| Dış ticaret/ülkeler | aynı | Yıllık | Tool tablosu 2012-2024 |
-| İletim hatları | aynı | Yıllık | 1979-2024 |
-| Trafolar | aynı | Yıllık | 1980-2024 |
-| EÜAŞ santral portföyü | aynı, EÜAŞ konulu TEİAŞ tabloları | Yıllık | 2024 |
-| EÜAŞ kurulu güç | aynı | Yıllık | 2006-2024 |
-| EÜAŞ üretim | aynı | Yıllık | 2014-2024; kaynak kırılımı 2019-2024 |
+| Aylık üretim/talep | [Aylık raporlar](https://www.teias.gov.tr/aylik-elektrik-uretim-tuketim-raporlari) | Aylık | 2019-günümüz (katalogdan dinamik) |
+| Kaynak bazlı üretim | [Yıllık istatistikler](https://www.teias.gov.tr/turkiye-elektrik-uretim-iletim-istatistikleri) | Yıllık | En güncel yıllık galerideki seri |
+| Kaynak bazlı kurulu güç | aynı | Yıllık | En güncel yıllık galerideki seri |
+| Puant/talep | aynı | Yıllık | En güncel yıllık galerideki seri |
+| Dış ticaret/ülkeler | aynı | Yıllık | En güncel yıllık denge tablosu |
+| İletim hatları | aynı | Yıllık | En güncel yıllık galerideki seri |
+| Trafolar | aynı | Yıllık | En güncel yıllık galerideki seri |
+| EÜAŞ santral portföyü | aynı, EÜAŞ konulu TEİAŞ tabloları | Yıllık | En güncel yıllık rapor dönemi |
+| EÜAŞ kurulu güç | aynı | Yıllık | En güncel yıllık galerideki seri |
+| EÜAŞ üretim | aynı | Yıllık | En güncel yıllık galerideki seri |
 
 ## Test ve smoke test
 
@@ -278,10 +295,13 @@ Smoke test internet gerektirir ve başarısız tool varsa non-zero exit code dö
 
 - TEİAŞ JSON galeri endpointi resmî sitenin kullandığı fakat belgelenmemiş bir web
   uygulaması sözleşmesidir; şema/slug değişikliği riski vardır.
-- Kesinleşmiş yıllık seri şu anda 2024'te biter. Cari aylık değerler geçici olabilir.
+- Yıllık ve aylık dosyalar sabit yıla kilitlenmez; en yeni yayın ve en güncel dönem
+  otomatik seçilir. `latest_available_period` ve `data_freshness` her yanıtta yer alır.
+- Cari aylık değerler TEİAŞ tarafından geçici olabilir (`provisional`).
 - Saatlik tüketim ve günlük yük eğrisi için kararlı, doğrulanmış makine endpointi
   bulunmadığından tool yoktur.
-- Ülke bazlı dış ticaret 2012-2024 yıllık çalışma kitabıyla sınırlıdır.
+- Ülke bazlı dış ticaret, en güncel yıllık denge çalışma kitabının kapsadığı yıllarla
+  sınırlıdır.
 - EÜAŞ'ın kendi sitesi kararsız olduğundan veri yolu değildir. EÜAŞ tool'ları TEİAŞ'ın
   EÜAŞ konulu resmî tablolarını kullanır.
 - EÜAŞ santral çalışma kitabındaki güvenilir olmayan ünite/devreye giriş hücreleri

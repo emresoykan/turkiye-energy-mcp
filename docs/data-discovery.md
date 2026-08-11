@@ -32,8 +32,22 @@ doğrulanmış kaynağı; `MEDIUM`, resmî fakat kırılgan veya yalnız HTML/PD
 ## Doğrulanmış erişim sözleşmeleri
 
 - Sayfa içeriği: `GET https://www.teias.gov.tr/api/page?locale=tr-TR&slug={page_slug}`
-- Galeri kataloğu: `GET https://www.teias.gov.tr/api/gallery?locale=tr-TR&slug={gallery_slug}`
+- Galeri kataloğu (tümü): `GET https://www.teias.gov.tr/api/gallery?locale=tr-TR`
+- Galeri detayı: `GET https://www.teias.gov.tr/api/gallery?locale=tr-TR&slug={gallery_slug}`
 - Dosya indirme: `GET https://webim.teias.gov.tr/file/{media.slug}?download`
+
+### Güncellik seçim kuralı
+
+Aynı veri seti için birden fazla yıllık galeri veya dosya varsa sunucu:
+
+1. katalogdan en yüksek dönem yılını ve en yeni `publish_at`/`updated_at`/`created_at`
+   damgasını seçer,
+2. dosya adını veya tablo numarasını hard-code etmez; semantik başlık + kapsanan dönem
+   aralığına göre en güncel dosyayı alır,
+3. geçmiş tarih sorgularında en güncel kümülatif resmi seriyi kullanıp istenen döneme
+   filtreler,
+4. istenen güncel dönem yoksa eski veriyi sessizce döndürmez; `latest_available_period`
+   ve `data_freshness` alanlarını metadata veya hata detayında açıklar.
 
 Bu endpointler TEİAŞ sayfasının kendi JavaScript istemcisinde kullanılıyor ve keşif sırasında
 JSON katalogları ile gerçek XLS/XLSX dosyaları indirilerek doğrulandı. Endpointler resmî fakat
