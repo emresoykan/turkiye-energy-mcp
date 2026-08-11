@@ -400,6 +400,10 @@ def parse_euas_thermal_plants(
             gross_generation_gwh=gross_generation_gwh,
             project_generation_gwh=number(_cell(row, 18)),
         )
+        # Dropped and suspect are mutually exclusive public states. A physical
+        # ceiling violation wins over the advisory 3x ratio signal.
+        if drop_reasons:
+            suspect_reasons = []
         records.append(
             {
                 "name": name,
@@ -479,6 +483,7 @@ def parse_euas_hydro_plants(
             drop_reasons.append("source_project_generation_mapping_unverifiable")
             average_gwh = None
             firm_gwh = None
+            suspect_reasons = []
             logger.warning(
                 "Dropping unverified project-generation pair for %s: "
                 "source columns have no independent plant-name key",
