@@ -1,3 +1,4 @@
+from collections import Counter
 from typing import Any
 
 from .clients.teias import TeiasClient, Workbook
@@ -661,7 +662,9 @@ class EnergyService:
             },
         )
 
-    async def _euas_plants(self) -> tuple[list[dict[str, Any]], list[Workbook]]:
+    async def _euas_plants(
+        self,
+    ) -> tuple[list[dict[str, Any]], list[Workbook], dict[str, Any]]:
         thermal_books = await self.teias.annual_workbooks("euas_thermal_plants")
         hydro_books = await self.teias.annual_workbooks("euas_hydro_plants")
         workbooks = thermal_books + hydro_books
@@ -671,6 +674,8 @@ class EnergyService:
         )
         records: list[dict[str, Any]] = []
         seen: set[tuple[str | None, str | None]] = set()
+        dropped_project_rows = 0
+        drop_reasons: Counter[str] = Counter()
         for workbook in thermal_books:
             for record in parse_euas_thermal_plants(
                 workbook.content, reference_year=reference_year
@@ -694,16 +699,33 @@ class EnergyService:
                 if key in seen:
                     continue
                 seen.add(key)
-                record = {k: v for k, v in record.items() if k != "name_key"}
+                if record.get("_project_generation_dropped"):
+                    dropped_project_rows += 1
+                    drop_reasons.update(record.get("_project_generation_drop_reasons") or [])
+                record = {
+                    k: v
+                    for k, v in record.items()
+                    if not k.startswith("_") and k != "name_key"
+                }
                 records.append(record)
-        return records, workbooks
+        quality = {
+            "dropped_project_generation_rows": dropped_project_rows,
+            "reason": (
+                "TEİAŞ XLS project-generation columns have no independent plant-name "
+                "key and their row alignment is not trustworthy; both fields are "
+                "nulled. Capacity-ceiling and 3x gross/average checks are also "
+                "reported in reason_counts."
+            ),
+            "reason_counts": dict(sorted(drop_reasons.items())),
+        }
+        return records, workbooks, quality
 
     async def get_euas_power_plants(
         self,
         plant_type: str | None = None,
         province: str | None = None,
     ) -> dict[str, Any]:
-        records, workbooks = await self._euas_plants()
+        records, workbooks, data_quality = await self._euas_plants()
         type_key = normalize_key(plant_type or "")
         type_aliases = {
             "hidro": "hydro",
@@ -747,6 +769,7 @@ class EnergyService:
             publication_date=meta["publication_date"],
             selected_source_name=meta["selected_source_name"],
             input_sources=[workbook.source_url for workbook in workbooks],
+            data_quality=data_quality,
         )
 
     async def get_euas_plant(self, plant_name: str) -> dict[str, Any]:

@@ -406,6 +406,10 @@ def parse_euas_hydro_plants(
     instead of being returned as if they belonged to the plant.
     """
     df = _frame(content)
+    logger.debug(
+        "EUAS hydro raw dataframe first 15 rows (untransformed):\n%s",
+        df.iloc[:15, :].to_string(index=True, header=True),
+    )
     name_col = _find_column(df, "santralin adi", "name of power plant", default=4) or 4
     province_col = _find_column(df, "bulundugu il", "location", default=6) or 6
     capacity_col = _find_column(df, "kurulu guc", "installed cap", default=17) or 17
@@ -419,7 +423,6 @@ def parse_euas_hydro_plants(
         firm_col = 20
 
     records: list[dict[str, Any]] = []
-    logged_raw = 0
     for _, row in df.iterrows():
         if len(row) <= max(capacity_col, gross_col, name_col) or number(_cell(row, 2), 0) is None:
             continue
@@ -430,22 +433,28 @@ def parse_euas_hydro_plants(
         gross_generation_gwh = number(_cell(row, gross_col))
         average_raw = number(_cell(row, average_col)) if average_col < len(row) else None
         firm_raw = number(_cell(row, firm_col)) if firm_col < len(row) else None
-        if logged_raw < 8:
-            logger.debug(
-                "EUAS hydro raw row name=%s capacity_mw=%s gross_gwh=%s avg_raw=%s firm_raw=%s",
-                name,
-                capacity_mw,
-                gross_generation_gwh,
-                average_raw,
-                firm_raw,
-            )
-            logged_raw += 1
-        average_gwh, firm_gwh = guard_project_generation(
+        average_gwh, firm_gwh, quality_reasons = guard_project_generation(
             plant_name=name,
             capacity_mw=capacity_mw,
+            gross_generation_gwh=gross_generation_gwh,
             average_gwh=average_raw,
             firm_gwh=firm_raw,
         )
+        # The workbook has only one plant-name column (the identity table at
+        # column 4). The project-generation block at columns 19/20 has no
+        # independent plant-name key, while live values demonstrate that its
+        # row order is not reliably aligned with the identity rows. Therefore
+        # an honest name-based join is impossible: do not expose even
+        # plausible-looking pairs as correctly mapped.
+        if average_raw is not None or firm_raw is not None:
+            quality_reasons.append("source_project_generation_mapping_unverifiable")
+            average_gwh = None
+            firm_gwh = None
+            logger.warning(
+                "Dropping unverified project-generation pair for %s: "
+                "source columns have no independent plant-name key",
+                name,
+            )
         records.append(
             {
                 "name": name,
@@ -458,6 +467,8 @@ def parse_euas_hydro_plants(
                 "average_project_generation_gwh": average_gwh,
                 "firm_project_generation_gwh": firm_gwh,
                 "reference_year": reference_year,
+                "_project_generation_dropped": bool(quality_reasons),
+                "_project_generation_drop_reasons": quality_reasons,
             }
         )
     return records
