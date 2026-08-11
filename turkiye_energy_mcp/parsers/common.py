@@ -104,7 +104,7 @@ def guard_project_generation(
     gross_generation_gwh: float | None,
     average_gwh: float | None,
     firm_gwh: float | None,
-) -> tuple[float | None, float | None, list[str]]:
+) -> tuple[float | None, float | None, list[str], list[str]]:
     """Drop an entire suspicious project-generation record.
 
     TEİAŞ hydro workbooks sometimes publish average/firm project GWh cells that
@@ -113,14 +113,15 @@ def guard_project_generation(
     internally inconsistent project-generation pair.
     """
     ceiling = annual_energy_ceiling_gwh(capacity_mw)
-    reasons: list[str] = []
+    drop_reasons: list[str] = []
+    suspect_reasons: list[str] = []
 
     for field, value in (
         ("average_project_generation_gwh", average_gwh),
         ("firm_project_generation_gwh", firm_gwh),
     ):
         if value is not None and ceiling is not None and value > ceiling:
-            reasons.append(f"{field}_exceeds_capacity_ceiling")
+            drop_reasons.append(f"{field}_exceeds_capacity_ceiling")
             logger.warning(
                 "Suspicious project generation for %s: %s=%s GWh exceeds "
                 "ceiling=%.3f GWh at %.3f MW",
@@ -145,24 +146,24 @@ def guard_project_generation(
                 average_gwh / gross_generation_gwh,
             )
         if ratio > 3:
-            reasons.append("average_vs_gross_ratio_exceeds_3x")
+            suspect_reasons.append("average_vs_gross_ratio_exceeds_3x")
             logger.warning(
-                "Suspicious project generation for %s: average=%s GWh and "
-                "gross=%s GWh differ by %.3fx",
+                "Marking project generation suspect for %s without dropping it: "
+                "average=%s GWh and gross=%s GWh differ by %.3fx",
                 plant_name,
                 average_gwh,
                 gross_generation_gwh,
                 ratio,
             )
 
-    if reasons:
+    if drop_reasons:
         logger.warning(
             "Dropping project-generation pair for %s: reasons=%s",
             plant_name,
-            ",".join(reasons),
+            ",".join(drop_reasons),
         )
-        return None, None, reasons
-    return average_gwh, firm_gwh, reasons
+        return None, None, drop_reasons, suspect_reasons
+    return average_gwh, firm_gwh, drop_reasons, suspect_reasons
 
 
 def guard_single_project_generation(
@@ -171,15 +172,16 @@ def guard_single_project_generation(
     capacity_mw: float | None,
     gross_generation_gwh: float | None,
     project_generation_gwh: float | None,
-) -> tuple[float | None, list[str]]:
+) -> tuple[float | None, list[str], list[str]]:
     """Validate a thermal plant's single project-generation field."""
     if project_generation_gwh is None:
-        return None, []
+        return None, [], []
 
-    reasons: list[str] = []
+    drop_reasons: list[str] = []
+    suspect_reasons: list[str] = []
     ceiling = annual_energy_ceiling_gwh(capacity_mw)
     if ceiling is not None and project_generation_gwh > ceiling:
-        reasons.append("project_generation_gwh_exceeds_capacity_ceiling")
+        drop_reasons.append("project_generation_gwh_exceeds_capacity_ceiling")
         logger.warning(
             "Suspicious thermal project generation for %s: value=%s GWh "
             "exceeds ceiling=%.3f GWh at %.3f MW",
@@ -202,24 +204,24 @@ def guard_single_project_generation(
                 project_generation_gwh / gross_generation_gwh,
             )
         if ratio > 3:
-            reasons.append("project_vs_gross_ratio_exceeds_3x")
+            suspect_reasons.append("project_vs_gross_ratio_exceeds_3x")
             logger.warning(
-                "Suspicious thermal project generation for %s: project=%s GWh "
-                "and gross=%s GWh differ by %.3fx",
+                "Marking thermal project generation suspect for %s without "
+                "dropping it: project=%s GWh and gross=%s GWh differ by %.3fx",
                 plant_name,
                 project_generation_gwh,
                 gross_generation_gwh,
                 ratio,
             )
 
-    if reasons:
+    if drop_reasons:
         logger.warning(
             "Dropping thermal project generation for %s: reasons=%s",
             plant_name,
-            ",".join(reasons),
+            ",".join(drop_reasons),
         )
-        return None, reasons
-    return project_generation_gwh, reasons
+        return None, drop_reasons, suspect_reasons
+    return project_generation_gwh, drop_reasons, suspect_reasons
 
 
 def clean_text(value: Any) -> str | None:

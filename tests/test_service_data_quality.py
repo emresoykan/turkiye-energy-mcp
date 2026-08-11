@@ -31,7 +31,7 @@ def workbook(name: str, content: bytes) -> Workbook:
 
 @pytest.mark.asyncio
 async def test_power_plant_response_reports_dropped_project_rows():
-    thermal = pd.DataFrame([[None] * 21 for _ in range(12)])
+    thermal = pd.DataFrame([[None] * 21 for _ in range(13)])
     thermal.iloc[11, 2] = 1
     thermal.iloc[11, 3] = "Soma A"
     thermal.iloc[11, 4] = "Linyit"
@@ -39,6 +39,13 @@ async def test_power_plant_response_reports_dropped_project_rows():
     thermal.iloc[11, 16] = 44
     thermal.iloc[11, 17] = 100
     thermal.iloc[11, 18] = 1365
+    thermal.iloc[12, 2] = 2
+    thermal.iloc[12, 3] = "Afşin-Elbistan B"
+    thermal.iloc[12, 4] = "Linyit"
+    thermal.iloc[12, 5] = "K.Maraş"
+    thermal.iloc[12, 16] = 1440
+    thermal.iloc[12, 17] = 2834
+    thermal.iloc[12, 18] = 9360
     hydro = pd.DataFrame([[None] * 21 for _ in range(13)])
     hydro.iloc[7, 4] = "SANTRALIN ADI"
     hydro.iloc[7, 6] = "BULUNDUĞU İL"
@@ -65,12 +72,14 @@ async def test_power_plant_response_reports_dropped_project_rows():
     assert response["data"][0]["gross_generation_gwh"] == 6316
     assert response["data"][0]["average_project_generation_gwh"] is None
     assert response["data"][0]["firm_project_generation_gwh"] is None
+    assert response["data"][0]["project_generation_suspect"] is True
     assert response["metadata"]["data_quality"] == {
         "dropped_project_generation_rows": 1,
+        "suspect_project_generation_rows": 1,
         "reason": (
-            "Project-generation fields are nulled for returned rows when source "
-            "mapping is unverifiable, capacity ceiling is exceeded, or project "
-            "and gross generation differ by more than 3x."
+            "Project-generation fields are nulled only when source mapping is "
+            "unverifiable or the physical capacity ceiling is exceeded. A project/"
+            "gross difference over 3x is retained and marked suspect."
         ),
         "reason_counts": {
             "average_vs_gross_ratio_exceeds_3x": 1,
@@ -79,19 +88,23 @@ async def test_power_plant_response_reports_dropped_project_rows():
     }
 
     thermal_response = await EnergyService(FakeTeias()).get_euas_power_plants("thermal")
-    assert [item["name"] for item in thermal_response["data"]] == ["Soma A"]
-    assert thermal_response["data"][0]["installed_capacity_mw"] == 44
-    assert thermal_response["data"][0]["gross_generation_gwh"] == 100
-    assert thermal_response["data"][0]["project_generation_gwh"] is None
+    thermal_rows = {item["name"]: item for item in thermal_response["data"]}
+    assert thermal_rows["Soma A"]["installed_capacity_mw"] == 44
+    assert thermal_rows["Soma A"]["gross_generation_gwh"] == 100
+    assert thermal_rows["Soma A"]["project_generation_gwh"] is None
+    assert thermal_rows["Soma A"]["project_generation_suspect"] is True
+    assert thermal_rows["Afşin-Elbistan B"]["project_generation_gwh"] == 9360
+    assert thermal_rows["Afşin-Elbistan B"]["project_generation_suspect"] is True
     assert thermal_response["metadata"]["data_quality"] == {
         "dropped_project_generation_rows": 1,
+        "suspect_project_generation_rows": 2,
         "reason": (
-            "Project-generation fields are nulled for returned rows when source "
-            "mapping is unverifiable, capacity ceiling is exceeded, or project "
-            "and gross generation differ by more than 3x."
+            "Project-generation fields are nulled only when source mapping is "
+            "unverifiable or the physical capacity ceiling is exceeded. A project/"
+            "gross difference over 3x is retained and marked suspect."
         ),
         "reason_counts": {
             "project_generation_gwh_exceeds_capacity_ceiling": 1,
-            "project_vs_gross_ratio_exceeds_3x": 1,
+            "project_vs_gross_ratio_exceeds_3x": 2,
         },
     }

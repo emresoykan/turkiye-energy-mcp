@@ -127,15 +127,20 @@ def _project_generation_quality(records: list[dict[str, Any]]) -> dict[str, Any]
     dropped = [
         record for record in records if record.get("_project_generation_dropped")
     ]
+    suspect = [
+        record for record in records if record.get("project_generation_suspect")
+    ]
     reasons: Counter[str] = Counter()
-    for record in dropped:
+    for record in records:
         reasons.update(record.get("_project_generation_drop_reasons") or [])
+        reasons.update(record.get("_project_generation_suspect_reasons") or [])
     return {
         "dropped_project_generation_rows": len(dropped),
+        "suspect_project_generation_rows": len(suspect),
         "reason": (
-            "Project-generation fields are nulled for returned rows when source "
-            "mapping is unverifiable, capacity ceiling is exceeded, or project "
-            "and gross generation differ by more than 3x."
+            "Project-generation fields are nulled only when source mapping is "
+            "unverifiable or the physical capacity ceiling is exceeded. A project/"
+            "gross difference over 3x is retained and marked suspect."
         ),
         "reason_counts": dict(sorted(reasons.items())),
     }
