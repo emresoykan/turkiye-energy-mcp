@@ -327,7 +327,8 @@ async def ytbs_get_peaks(
 
 @mcp.tool(title="YTBS veri deposu durumu", annotations=READ_ONLY)
 async def ytbs_get_sync_status() -> dict[str, Any]:
-    """ytbs-sync deposunun son senkron zamanı, kapsadığı günler ve son hatalar."""
+    """ytbs-sync deposunun son senkron zamanı, kapsadığı günler, son tam gün (günlük raporu
+    olan son gün), kısmi günler ve son hatalar. Depo birikimlidir, kayan pencere değildir."""
     return await _safe(ytbs.get_sync_status())
 
 
