@@ -38,12 +38,16 @@ verir. Bu yüzden veri MCP sunucusu tarafından değil, Türkiye'deki bir makine
 pip install -e .
 ytbs-sync                      # bugün dahil son 7 gün (revizyonları da yakalar)
 ytbs-sync --baslangic 2026-01-01 --bitis 2026-03-31 --veri-klasoru D:\ytbs-veri
-ytbs-sync --veri-klasoru D:\ytbs-veri --git-push   # veri klasörü private veri reposunun klonu
+git clone -b ytbs-data --single-branch https://github.com/emresoykan/turkiye-energy-mcp D:\ytbs-veri
+ytbs-sync --veri-klasoru D:\ytbs-veri --git-push   # veriyi ytbs-data dalına gönderir
 ```
 
-`--git-push` kimlik doğrulamayı makinenin git yapılandırmasına (Windows'ta Git Credential
-Manager) bırakır; script token saklamaz. Railway'deki sunucu aynı repoyu `YTBS_DATA_REPO` ve
-yalnız okuma yetkili `YTBS_DATA_TOKEN` ile okur.
+Veri bu reponun yalnız veri içeren `ytbs-data` dalında tutulur; `main` dalına ve deploy'a
+karışmaz. `--git-push` kimlik doğrulamayı makinenin git yapılandırmasına (Windows'ta Git
+Credential Manager) bırakır; script token saklamaz. Railway'deki sunucu
+`YTBS_DATA_REPO=emresoykan/turkiye-energy-mcp` ve `YTBS_DATA_REF=ytbs-data` ile okur; repo
+public olduğu için token gerekmez. CSV'ler bu nedenle GitHub'da herkese açıktır (kaynak
+zaten kamuya açık TEİAŞ verisidir).
 
 Depo yerleşimi: `<klasör>/<tablo>/<YYYY>/<YYYY-MM>.csv` + `manifest.json`. Her satır `tarih`
 (rapor günü) ve `cekim_zamani` taşır. TEİAŞ'a göre veriler geçicidir, geriye dönük
@@ -130,7 +134,7 @@ MCP_TRANSPORT=stdio turkiye-energy-mcp
 | `YTBS_DATA_DIR` | boş | `ytbs-sync` CSV deposunun yerel klasörü (verilirse öncelikli) |
 | `YTBS_DATA_REPO` | boş | CSV deposunun GitHub reposu, `owner/repo` (Railway için) |
 | `YTBS_DATA_REF` | `main` | Veri reposunun dalı |
-| `YTBS_DATA_TOKEN` | boş | Veri reposu için **yalnız okuma** yetkili fine-grained token |
+| `YTBS_DATA_TOKEN` | boş | Yalnız private veri reposunda gerekir; **yalnız okuma** yetkili fine-grained token |
 
 Yıllık/aylık kaynak seçimi sabit yıl veya sabit dosya adına bağlı değildir.
 Sunucu TEİAŞ galeri kataloğundan en yeni yayın tarihli ve en güncel dönemi kapsayan
