@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   TEİAŞ YTBS "İstatistikler" sayfasından 15 dakikalık yük eğrisini ve kaynak bazlı
   üretimi (MW) gün gün çeker ve CSV olarak kaydeder.
