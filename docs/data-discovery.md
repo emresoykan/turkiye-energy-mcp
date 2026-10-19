@@ -68,5 +68,31 @@ belgelenmemiş web uygulaması sözleşmeleridir; şema değişikliği teknik ri
 - **Geçmiş gün:** PrimeFaces AJAX POST'u (`formdash:gunlukRapor`) Türkiye'den doğrulandı
   (2026-10-18: 96/96 nokta). Yanıt bir JSF `partial-response`'tur; CDATA, dizi sonunda
   `]]><![CDATA[` ile bölünür, ayrıştırmadan önce bu ayraç kaldırılmalıdır.
-- **Belirsiz:** 15 dk değerinin ortalama mı anlık mı olduğu belirtilmiyor; MWh dönüşümü
-  öncesi doğrulanmalı.
+- **15 dk yük serisi:** 2026-10-01 için serinin maksimumu (46.441 MW) günlük Excel'deki
+  "Maksimum anlık talep (MW)" değeriyle birebir aynı; seri anlık talep olarak ele alınmalı,
+  15 dk ortalaması gibi MWh'e çevrilmemeli. Saatlik enerji için Excel'deki MWh tabloları
+  kullanılmalı.
+- **Revizyon:** 2026-10-18 tepe yükü aynı gün iki çekimde 40.119,72 → ~40.140 MW geldi;
+  veriler geçmişe dönük güncelleniyor, birkaç gün geriye yeniden çekim ve çekim zamanı
+  kaydı gerekli.
+
+### YTBS günlük Excel raporu (`formdash:j_idt35`, ~3,4 MB XLSX, 14 sayfa)
+
+2026-10-01 dosyası üzerinden doğrulandı:
+
+| Sayfa | İçerik | Birim |
+|---|---|---|
+| Rapor273 | Ulusal puant: maks/min anlık talep, maks/min saatlik tüketim, günlük üretim/tüketim; günlük, aylık ve yıllık rekorlar (tarih/saat) | MW / MWh |
+| Rapor277 | 9 Yük Tevzi bölgesinin puantı ve puant zamanı | MW |
+| Rapor228 | Saatlik: yenilenemez üretim, yenilenebilir üretim, depolama deşarj/şarj, ithalat, ihracat, tüketim | MWh |
+| Rapor232 | Ay içi günlük aynı kırılım (ileri günler 0) | MWh |
+| Rapor212 / 212 3 | Üretimin kuruluşlara göre dağılımı (EÜAŞ, İHD, lisanssız, serbest, YİD), günlük ve aylık | MWh, % |
+| Rapor212 2 / 212 4 | Üretimin kaynaklara göre dağılımı, günlük ve aylık | MWh, % |
+| Rapor209 | Ay içi günlük, kaynak bazlı üretim (termik/hidrolik ara toplamlarıyla) | MWh |
+| Rapor327 / 327 2 | Kuruluş × kaynak santral sayısı ve **kurulu güç** | adet / MW |
+| Rapor329 | Kaynak bazlı saatlik **emre amade kapasite**, talep tahmini, emre amadelik ve arz güvenliği oranı | MWh, % |
+| Rapor453 | Aylık su durumu (gelen, enerjiye kullanılan, depolanan) | bin m³ |
+
+Tutarlılık (2026-10-01): üretim + ithalat − ihracat + deşarj − şarj = tüketim (fark 0,02 MWh);
+yenilenebilir = akarsu + barajlı + biyokütle + güneş + jeotermal + rüzgar (atık ısı hariç),
+birebir. Su durumu değerlerinin dönemi (günlük mü kümülatif mi) doğrulanmadı.
