@@ -19,10 +19,40 @@ okur ve katalogda listelenen XLS/XLSX dosyalarını indirir:
 1. `https://www.teias.gov.tr/api/gallery`
 2. `https://webim.teias.gov.tr/file/{media_slug}?download`
 
-HTML scraping production veri yolunda kullanılmaz. EÜAŞ web sitesi keşif sırasında
+HTML scraping production veri yolunda kullanılmaz; tek istisna aşağıdaki YTBS
+senkronizasyonudur. EÜAŞ web sitesi keşif sırasında
 aralıklı TLS reset/HTTP 500 ürettiğinden EÜAŞ HTML sayfaları production kaynağına
 alınmamıştır. Ayrıntılı keşif ve uygulanamayan veri setleri:
 [docs/data-discovery.md](docs/data-discovery.md).
+
+### YTBS (TEİAŞ Yük Tevzi Bilgi Sistemi) — geçici işletme verisi
+
+`ytbsbilgi.teias.gov.tr` İstatistikler sayfası, lisanssız üretim dahil 15 dk yük ve kaynak
+bazlı üretimi ile günlük Excel raporunu (saatlik enerji dengesi, depolama, ithalat/ihracat,
+kuruluş × kaynak kurulu güç, emre amade kapasite, ulusal/bölgesel puant, su durumu) yayımlar.
+Kaynak resmî bir API değildir (JSF form gönderimi) ve **yalnız Türkiye IP'lerinden** yanıt
+verir. Bu yüzden veri MCP sunucusu tarafından değil, Türkiye'deki bir makinede çalışan
+`ytbs-sync` komutuyla çekilir ve aylık bölümlenmiş CSV deposuna yazılır:
+
+```bash
+pip install -e .
+ytbs-sync                      # bugün dahil son 7 gün (revizyonları da yakalar)
+ytbs-sync --baslangic 2026-01-01 --bitis 2026-03-31 --veri-klasoru D:\ytbs-veri
+git clone -b ytbs-data --single-branch https://github.com/emresoykan/turkiye-energy-mcp D:\ytbs-veri
+ytbs-sync --veri-klasoru D:\ytbs-veri --git-push   # veriyi ytbs-data dalına gönderir
+```
+
+Veri bu reponun yalnız veri içeren `ytbs-data` dalında tutulur; `main` dalına ve deploy'a
+karışmaz. `--git-push` kimlik doğrulamayı makinenin git yapılandırmasına (Windows'ta Git
+Credential Manager) bırakır; script token saklamaz. Railway'deki sunucu
+`YTBS_DATA_REPO=emresoykan/turkiye-energy-mcp` ve `YTBS_DATA_REF=ytbs-data` ile okur; repo
+public olduğu için token gerekmez. CSV'ler bu nedenle GitHub'da herkese açıktır (kaynak
+zaten kamuya açık TEİAŞ verisidir).
+
+Depo yerleşimi: `<klasör>/<tablo>/<YYYY>/<YYYY-MM>.csv` + `manifest.json`. Her satır `tarih`
+(rapor günü) ve `cekim_zamani` taşır. TEİAŞ'a göre veriler geçicidir, geriye dönük
+düzeltilir ve lisanssız üretim ay sonuna kadar tahminidir. 15 dk yük serisi **anlık talep
+(MW)** değeridir; saatlik enerji için `saatlik_denge` (MWh) kullanılmalıdır.
 
 ## Mimari
 
@@ -31,6 +61,7 @@ turkiye_energy_mcp/
 ├── server.py              # MCP tool kayıtları ve transport
 ├── service.py             # veri setleri ve kaynaklar arası hesaplamalar
 ├── clients/teias.py       # resmî JSON katalog/dosya istemcisi
+├── ytbs/                  # YTBS istemcisi, ayrıştırıcılar, CSV deposu, ytbs-sync CLI
 ├── parsers/               # Türkçe sayı/tarih ve XLS/XLSX ayrıştırıcıları
 ├── http_client.py         # ortak async connection pool, retry/backoff
 ├── cache.py               # eşzamanlı istek birleştiren TTL cache
@@ -100,6 +131,10 @@ MCP_TRANSPORT=stdio turkiye-energy-mcp
 | `TEIAS_BASE_URL` | resmî TEİAŞ URL | JSON katalog kökü |
 | `TEIAS_FILE_BASE_URL` | resmî TEİAŞ dosya URL | Dosya indirme kökü |
 | `PUBLIC_BASE_URL` | boş | Claude connector OAuth discovery origin'i (ör. Railway domain) |
+| `YTBS_DATA_DIR` | boş | `ytbs-sync` CSV deposunun yerel klasörü (verilirse öncelikli) |
+| `YTBS_DATA_REPO` | boş | CSV deposunun GitHub reposu, `owner/repo` (Railway için) |
+| `YTBS_DATA_REF` | `main` | Veri reposunun dalı |
+| `YTBS_DATA_TOKEN` | boş | Yalnız private veri reposunda gerekir; **yalnız okuma** yetkili fine-grained token |
 
 Yıllık/aylık kaynak seçimi sabit yıl veya sabit dosya adına bağlı değildir.
 Sunucu TEİAŞ galeri kataloğundan en yeni yayın tarihli ve en güncel dönemi kapsayan
@@ -125,7 +160,7 @@ https://<railway-domain>/mcp
 
 ## MCP tool'ları
 
-Toplam 16 production tool vardır.
+Toplam 23 production tool vardır (16 `teias_*`/EÜAŞ + 7 `ytbs_*`).
 
 | Tool | Parametreler | Veri |
 |---|---|---|
@@ -145,6 +180,16 @@ Toplam 16 production tool vardır.
 | `get_euas_share_of_installed_capacity` | `start_year`, `end_year` | EÜAŞ/Türkiye kapasite payı |
 | `get_euas_share_of_generation` | `start_year`, `end_year` | EÜAŞ/Türkiye üretim payı |
 | `compare_euas_vs_turkey_generation` | `start_year`, `end_year` | İki üretim serisinin karşılaştırması |
+| `ytbs_get_load_generation_15min` | `start_date`, `end_date`, `sources?` | 15 dk anlık yük ve kaynak bazlı üretim, MW (≤7 gün) |
+| `ytbs_get_hourly_balance` | `start_date`, `end_date` | Saatlik üretim, depolama, ithalat/ihracat, tüketim, MWh (≤92 gün) |
+| `ytbs_get_daily_generation` | `start_date`, `end_date`, `breakdown?`, `source?` | Günlük üretim, kaynak veya kuruluş kırılımı (≤366 gün) |
+| `ytbs_get_installed_capacity` | `on_date?`, `breakdown?` | Günlük kurulu güç ve santral sayısı (kaynak/kuruluş/detay) |
+| `ytbs_get_available_capacity` | `start_date`, `end_date`, `items?` | Saatlik emre amade kapasite, talep tahmini, arz güvenliği (≤31 gün) |
+| `ytbs_get_peaks` | `start_date`, `end_date`, `scope?` | Ulusal puant rekorları veya 9 bölgenin puantı (≤92 gün) |
+| `ytbs_get_sync_status` | — | YTBS deposunun son senkronu, kapsadığı günler, hatalar |
+
+`ytbs_*` tool'ları `ytbs-sync` deposundan okur; yanıtlarda `provisional: true`,
+`missing_days` ve `storage_backend` metadata alanları bulunur.
 
 Tarih biçimi `YYYY-MM-DD`, timezone `Europe/Istanbul`'dur. Yıllık tool'lar tam
 yıl alır. Güç `MW`, enerji `GWh`, trafo kapasitesi `MVA`, hat uzunluğu `km` olarak
@@ -320,8 +365,8 @@ Smoke test internet gerektirir ve başarısız tool varsa non-zero exit code dö
 - Yıllık ve aylık dosyalar sabit yıla kilitlenmez; en yeni yayın ve en güncel dönem
   otomatik seçilir. `latest_available_period` ve `data_freshness` her yanıtta yer alır.
 - Cari aylık değerler TEİAŞ tarafından geçici olabilir (`provisional`).
-- Saatlik tüketim ve günlük yük eğrisi için kararlı, doğrulanmış makine endpointi
-  bulunmadığından tool yoktur.
+- Saatlik tüketim ve 15 dk yük eğrisi yalnız YTBS'den (`ytbs-sync`) gelir; kaynak Türkiye
+  dışından erişilemez ve sayfa yapısı değişirse ayrıştırıcı açık hata verir.
 - Ülke bazlı dış ticaret, en güncel yıllık denge çalışma kitabının kapsadığı yıllarla
   sınırlıdır.
 - EÜAŞ'ın kendi sitesi kararsız olduğundan veri yolu değildir. EÜAŞ tool'ları TEİAŞ'ın

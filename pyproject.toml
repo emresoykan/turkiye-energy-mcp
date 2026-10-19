@@ -29,6 +29,7 @@ dev = [
 
 [project.scripts]
 turkiye-energy-mcp = "turkiye_energy_mcp.server:main"
+ytbs-sync = "turkiye_energy_mcp.ytbs.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["turkiye_energy_mcp"]

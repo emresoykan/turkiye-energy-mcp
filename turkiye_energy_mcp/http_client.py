@@ -33,7 +33,13 @@ class ResilientHTTPClient:
     async def close(self) -> None:
         await self._client.aclose()
 
-    async def get(self, url: str, *, params: dict[str, Any] | None = None) -> httpx.Response:
+    async def get(
+        self,
+        url: str,
+        *,
+        params: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> httpx.Response:
         attempts = self.settings.http_max_retries + 1
         retrying = AsyncRetrying(
             stop=stop_after_attempt(attempts),
@@ -49,7 +55,7 @@ class ResilientHTTPClient:
         try:
             async for attempt in retrying:
                 with attempt:
-                    response = await self._client.get(url, params=params)
+                    response = await self._client.get(url, params=params, headers=headers)
                     if response.status_code == 429 or response.status_code >= 500:
                         logger.warning(
                             "Retryable upstream response",
