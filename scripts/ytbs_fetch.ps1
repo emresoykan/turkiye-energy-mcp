@@ -94,13 +94,21 @@ function Get-FormBody($page, [datetime]$day) {
 }
 
 function Invoke-FormPost($session, $page, $body, $headers) {
-    $resp = Invoke-WebRequest -Uri $page.PostUrl -Method Post -Body $body -Headers $headers `
-        -ContentType 'application/x-www-form-urlencoded; charset=UTF-8' `
-        -WebSession $session -UseBasicParsing -UserAgent $UserAgent
-    Get-Utf8Text $resp
+    try {
+        $resp = Invoke-WebRequest -Uri $page.PostUrl -Method Post -Body $body -Headers $headers `
+            -ContentType 'application/x-www-form-urlencoded; charset=UTF-8' `
+            -WebSession $session -UseBasicParsing -UserAgent $UserAgent
+        Get-Utf8Text $resp
+    } finally {
+        # -Headers WebSession'a kalıcı yazılır; temizlenmezse sonraki GET'ler de AJAX sayılır.
+        foreach ($k in @($headers.Keys)) { [void]$session.Headers.Remove($k) }
+    }
 }
 
 function Read-DayData([string]$text, $page, [string]$want) {
+    # JSF partial-response CDATA'yı "]]><![CDATA[" ile böler (ör. "}]]]><![CDATA[;");
+    # birleştirince orijinal script metni geri gelir.
+    $text = $text.Replace(']]><![CDATA[', '')
     $yuk = Get-JsArray $text 'gunlukYukEgrisiData'
     $uretim = Get-JsArray $text 'gunlukUretimEgrisiData'
     if ($null -eq $yuk -or $null -eq $uretim) { return $null }

@@ -65,6 +65,8 @@ belgelenmemiş web uygulaması sözleşmeleridir; şema değişikliği teknik ri
   yayımlanmamış dilimler `0` olarak gelir; boş (null) olarak ele alınmalıdır.
 - **Raporlar sayfası:** Yalnız 3 statik doküman (YTBS tanıtım sunumları, 2023 Kısa Devre
   Akımları); veri serisi yok.
+- **Geçmiş gün:** PrimeFaces AJAX POST'u (`formdash:gunlukRapor`) Türkiye'den doğrulandı
+  (2026-10-18: 96/96 nokta). Yanıt bir JSF `partial-response`'tur; CDATA, dizi sonunda
+  `]]><![CDATA[` ile bölünür, ayrıştırmadan önce bu ayraç kaldırılmalıdır.
 - **Belirsiz:** 15 dk değerinin ortalama mı anlık mı olduğu belirtilmiyor; MWh dönüşümü
-  öncesi doğrulanmalı. Geçmiş gün POST akışı `scripts/ytbs_fetch.ps1` ile Türkiye'den test
-  edilmeyi bekliyor.
+  öncesi doğrulanmalı.
