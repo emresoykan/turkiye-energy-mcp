@@ -19,10 +19,31 @@ okur ve katalogda listelenen XLS/XLSX dosyalarını indirir:
 1. `https://www.teias.gov.tr/api/gallery`
 2. `https://webim.teias.gov.tr/file/{media_slug}?download`
 
-HTML scraping production veri yolunda kullanılmaz. EÜAŞ web sitesi keşif sırasında
+HTML scraping production veri yolunda kullanılmaz; tek istisna aşağıdaki YTBS
+senkronizasyonudur. EÜAŞ web sitesi keşif sırasında
 aralıklı TLS reset/HTTP 500 ürettiğinden EÜAŞ HTML sayfaları production kaynağına
 alınmamıştır. Ayrıntılı keşif ve uygulanamayan veri setleri:
 [docs/data-discovery.md](docs/data-discovery.md).
+
+### YTBS (TEİAŞ Yük Tevzi Bilgi Sistemi) — geçici işletme verisi
+
+`ytbsbilgi.teias.gov.tr` İstatistikler sayfası, lisanssız üretim dahil 15 dk yük ve kaynak
+bazlı üretimi ile günlük Excel raporunu (saatlik enerji dengesi, depolama, ithalat/ihracat,
+kuruluş × kaynak kurulu güç, emre amade kapasite, ulusal/bölgesel puant, su durumu) yayımlar.
+Kaynak resmî bir API değildir (JSF form gönderimi) ve **yalnız Türkiye IP'lerinden** yanıt
+verir. Bu yüzden veri MCP sunucusu tarafından değil, Türkiye'deki bir makinede çalışan
+`ytbs-sync` komutuyla çekilir ve aylık bölümlenmiş CSV deposuna yazılır:
+
+```bash
+pip install -e .
+ytbs-sync                      # bugün dahil son 7 gün (revizyonları da yakalar)
+ytbs-sync --baslangic 2026-01-01 --bitis 2026-03-31 --veri-klasoru D:\ytbs-veri
+```
+
+Depo yerleşimi: `<klasör>/<tablo>/<YYYY>/<YYYY-MM>.csv` + `manifest.json`. Her satır `tarih`
+(rapor günü) ve `cekim_zamani` taşır. TEİAŞ'a göre veriler geçicidir, geriye dönük
+düzeltilir ve lisanssız üretim ay sonuna kadar tahminidir. 15 dk yük serisi **anlık talep
+(MW)** değeridir; saatlik enerji için `saatlik_denge` (MWh) kullanılmalıdır.
 
 ## Mimari
 
@@ -31,6 +52,7 @@ turkiye_energy_mcp/
 ├── server.py              # MCP tool kayıtları ve transport
 ├── service.py             # veri setleri ve kaynaklar arası hesaplamalar
 ├── clients/teias.py       # resmî JSON katalog/dosya istemcisi
+├── ytbs/                  # YTBS istemcisi, ayrıştırıcılar, CSV deposu, ytbs-sync CLI
 ├── parsers/               # Türkçe sayı/tarih ve XLS/XLSX ayrıştırıcıları
 ├── http_client.py         # ortak async connection pool, retry/backoff
 ├── cache.py               # eşzamanlı istek birleştiren TTL cache
@@ -320,8 +342,8 @@ Smoke test internet gerektirir ve başarısız tool varsa non-zero exit code dö
 - Yıllık ve aylık dosyalar sabit yıla kilitlenmez; en yeni yayın ve en güncel dönem
   otomatik seçilir. `latest_available_period` ve `data_freshness` her yanıtta yer alır.
 - Cari aylık değerler TEİAŞ tarafından geçici olabilir (`provisional`).
-- Saatlik tüketim ve günlük yük eğrisi için kararlı, doğrulanmış makine endpointi
-  bulunmadığından tool yoktur.
+- Saatlik tüketim ve 15 dk yük eğrisi yalnız YTBS'den (`ytbs-sync`) gelir; kaynak Türkiye
+  dışından erişilemez ve sayfa yapısı değişirse ayrıştırıcı açık hata verir.
 - Ülke bazlı dış ticaret, en güncel yıllık denge çalışma kitabının kapsadığı yıllarla
   sınırlıdır.
 - EÜAŞ'ın kendi sitesi kararsız olduğundan veri yolu değildir. EÜAŞ tool'ları TEİAŞ'ın
