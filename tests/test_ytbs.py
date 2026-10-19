@@ -273,3 +273,26 @@ def test_sync_keeps_series_when_past_daily_report_fails(tmp_path, monkeypatch):
     store = CsvStore(tmp_path)
     assert len(store.read("15dk_yuk_uretim", date(2026, 10, 18), date(2026, 10, 18))) == 96
     assert "2026-10-18" in store.load_manifest()["son_hatalar"]
+
+
+def test_sync_writes_utf8_log_and_keeps_stderr_clean_on_success(tmp_path, monkeypatch, capsys):
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text=PAGE if request.method == "GET" else AJAX)
+
+    cli = _cli_with(monkeypatch, handler, today=date(2026, 10, 18))
+    log = tmp_path / "ytbs-sync.log"
+    args = [
+        "--gun",
+        "1",
+        "--veri-klasoru",
+        str(tmp_path / "veri"),
+        "--bekleme",
+        "0",
+        "--log",
+        str(log),
+    ]
+    assert cli.main(args) == 0
+    assert capsys.readouterr().err == ""
+    text = log.read_text(encoding="utf-8")
+    assert "günlük rapor gün bitince alınacak" in text
+    assert "başarılı 1, hatalı 0" in text
