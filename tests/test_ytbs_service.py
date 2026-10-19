@@ -115,3 +115,11 @@ async def test_public_repo_without_token_reads_raw_files_from_data_branch(data_d
     result = await svc.get_peaks("2026-10-01", "2026-10-01")
     assert len(result["data"]) == 20
     assert "Authorization" not in route.calls.last.request.headers
+
+
+async def test_sync_status_reports_last_full_day_and_partial_days(data_dir):
+    status = await make_service(ytbs_data_dir=str(data_dir)).get_sync_status()
+    assert status["ilk_gun"] == "2026-10-01" and status["son_gun"] == "2026-10-18"
+    assert status["son_tam_gun"] == "2026-10-01"
+    assert status["kismi_gunler"] == ["2026-10-18"]
+    assert "kayan pencere değildir" in status["depo_davranisi"]

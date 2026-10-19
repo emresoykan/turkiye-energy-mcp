@@ -49,6 +49,13 @@ ENGLISH_SOURCES = {
 }
 SERIES_FORMAT = "Sayfaya gömülü JSON (ytbs-sync CSV deposu)"
 REPORT_FORMAT = "Günlük XLSX rapor (ytbs-sync CSV deposu)"
+STORE_NOTE = (
+    "Depo birikimlidir, kayan pencere değildir: eski günler silinmez. Her senkron son 7 günü "
+    "yeniden çekip revize değerleri üzerine yazar. ilk_gun öncesi tarihler ytbs-sync "
+    "--baslangic ile doldurulabilir. kismi_gunler'de 15 dk verisi gün içi kesittir; saatlik "
+    "denge, kurulu güç, emre amade ve puant tabloları o günler için henüz yoktur, günlük "
+    "toplam/ortalama hesaplarına tam gün olarak katılmamalıdır."
+)
 
 
 def _typed(row: dict[str, str]) -> dict[str, Any]:
@@ -305,6 +312,15 @@ class YtbsService:
     async def get_sync_status(self) -> dict[str, Any]:
         manifest = await self.repo.manifest()
         days = sorted(manifest.get("gunler", {}))
+        last_full = None
+        if days:
+            # Günlük rapor (saatlik denge vb.) yalnız tamamlanmış günler için yayımlanır;
+            # raporu olan son gün, verisi tam olan son gündür.
+            last = date.fromisoformat(days[-1])
+            start = max(date.fromisoformat(days[0]), last - timedelta(days=31))
+            hourly = await self.repo.read("saatlik_denge", start, last)
+            last_full = max((r["tarih"] for r in hourly), default=None)
+        partial = [d for d in days if last_full and d > last_full]
         return {
             "source": SOURCE,
             "storage_backend": self.repo.backend,
@@ -312,6 +328,9 @@ class YtbsService:
             "gun_sayisi": len(days),
             "ilk_gun": days[0] if days else None,
             "son_gun": days[-1] if days else None,
+            "son_tam_gun": last_full,
+            "kismi_gunler": partial,
             "son_hatalar": manifest.get("son_hatalar", {}),
+            "depo_davranisi": STORE_NOTE,
             "notes": YTBS_DATA_NOTE,
         }
