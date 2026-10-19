@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -31,6 +31,13 @@ class Settings(BaseSettings):
 
     teias_base_url: str = "https://www.teias.gov.tr"
     teias_file_base_url: str = "https://webim.teias.gov.tr"
+    # YTBS CSV deposu (ytbs-sync çıktısı). Yerel klasör verilirse o okunur; yoksa GitHub
+    # reposu (owner/repo) Contents API ile okunur. Token yalnız okuma yetkili olmalıdır.
+    ytbs_data_dir: str | None = None
+    ytbs_data_repo: str | None = None
+    ytbs_data_ref: str = "main"
+    ytbs_data_token: SecretStr | None = None
+
     # Absolute public origin for Claude OAuth discovery (no trailing slash).
     # Example: https://turkiye-energy-mcp-production.up.railway.app
     public_base_url: str | None = None

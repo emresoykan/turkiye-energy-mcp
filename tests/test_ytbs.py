@@ -183,3 +183,40 @@ def test_sync_cli_writes_partitioned_csv_and_manifest(tmp_path, monkeypatch):
     rows = CsvStore(tmp_path).read("15dk_yuk_uretim", date(2026, 10, 18), date(2026, 10, 18))
     assert len(rows) == 96
     assert "2026-10-18" in CsvStore(tmp_path).load_manifest()["gunler"]
+
+
+def test_sync_cli_git_push_commits_changes(tmp_path, monkeypatch):
+    import subprocess
+
+    from turkiye_energy_mcp.ytbs import cli
+
+    remote = tmp_path / "remote.git"
+    subprocess.run(["git", "init", "-q", "--bare", str(remote)], check=True)
+    work = tmp_path / "veri"
+    subprocess.run(["git", "clone", "-q", str(remote), str(work)], check=True)
+    for key, value in (("user.email", "t@example.com"), ("user.name", "t")):
+        subprocess.run(["git", "-C", str(work), "config", key, value], check=True)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text=PAGE if request.method == "GET" else AJAX)
+
+    monkeypatch.setattr(
+        cli, "YtbsClient", lambda: YtbsClient(transport=httpx.MockTransport(handler))
+    )
+    args = [
+        "--baslangic",
+        "2026-10-18",
+        "--bitis",
+        "2026-10-18",
+        "--excel-yok",
+        "--veri-klasoru",
+        str(work),
+        "--bekleme",
+        "0",
+        "--git-push",
+    ]
+    assert cli.main(args) == 0
+    log = subprocess.run(
+        ["git", "-C", str(remote), "log", "--oneline"], capture_output=True, text=True, check=True
+    ).stdout
+    assert "ytbs-sync 2026-10-18..2026-10-18" in log

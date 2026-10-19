@@ -8,7 +8,10 @@ from turkiye_energy_mcp.service import _canonical_source
 async def test_production_tool_list_has_only_verified_tools():
     tools = await mcp.list_tools()
     names = {tool.name for tool in tools}
-    assert len(names) == 16
+    assert len(names) == 23
+    assert {n for n in names if n.startswith("ytbs_")} >= {
+        "ytbs_get_hourly_balance", "ytbs_get_installed_capacity", "ytbs_get_sync_status"
+    }
     assert "teias_get_monthly_energy" in names
     assert "euas_get_power_plants" in names
     assert "get_euas_share_of_generation" in names

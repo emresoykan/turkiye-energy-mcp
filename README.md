@@ -38,7 +38,12 @@ verir. Bu yüzden veri MCP sunucusu tarafından değil, Türkiye'deki bir makine
 pip install -e .
 ytbs-sync                      # bugün dahil son 7 gün (revizyonları da yakalar)
 ytbs-sync --baslangic 2026-01-01 --bitis 2026-03-31 --veri-klasoru D:\ytbs-veri
+ytbs-sync --veri-klasoru D:\ytbs-veri --git-push   # veri klasörü private veri reposunun klonu
 ```
+
+`--git-push` kimlik doğrulamayı makinenin git yapılandırmasına (Windows'ta Git Credential
+Manager) bırakır; script token saklamaz. Railway'deki sunucu aynı repoyu `YTBS_DATA_REPO` ve
+yalnız okuma yetkili `YTBS_DATA_TOKEN` ile okur.
 
 Depo yerleşimi: `<klasör>/<tablo>/<YYYY>/<YYYY-MM>.csv` + `manifest.json`. Her satır `tarih`
 (rapor günü) ve `cekim_zamani` taşır. TEİAŞ'a göre veriler geçicidir, geriye dönük
@@ -122,6 +127,10 @@ MCP_TRANSPORT=stdio turkiye-energy-mcp
 | `TEIAS_BASE_URL` | resmî TEİAŞ URL | JSON katalog kökü |
 | `TEIAS_FILE_BASE_URL` | resmî TEİAŞ dosya URL | Dosya indirme kökü |
 | `PUBLIC_BASE_URL` | boş | Claude connector OAuth discovery origin'i (ör. Railway domain) |
+| `YTBS_DATA_DIR` | boş | `ytbs-sync` CSV deposunun yerel klasörü (verilirse öncelikli) |
+| `YTBS_DATA_REPO` | boş | CSV deposunun GitHub reposu, `owner/repo` (Railway için) |
+| `YTBS_DATA_REF` | `main` | Veri reposunun dalı |
+| `YTBS_DATA_TOKEN` | boş | Veri reposu için **yalnız okuma** yetkili fine-grained token |
 
 Yıllık/aylık kaynak seçimi sabit yıl veya sabit dosya adına bağlı değildir.
 Sunucu TEİAŞ galeri kataloğundan en yeni yayın tarihli ve en güncel dönemi kapsayan
@@ -147,7 +156,7 @@ https://<railway-domain>/mcp
 
 ## MCP tool'ları
 
-Toplam 16 production tool vardır.
+Toplam 23 production tool vardır (16 `teias_*`/EÜAŞ + 7 `ytbs_*`).
 
 | Tool | Parametreler | Veri |
 |---|---|---|
@@ -167,6 +176,16 @@ Toplam 16 production tool vardır.
 | `get_euas_share_of_installed_capacity` | `start_year`, `end_year` | EÜAŞ/Türkiye kapasite payı |
 | `get_euas_share_of_generation` | `start_year`, `end_year` | EÜAŞ/Türkiye üretim payı |
 | `compare_euas_vs_turkey_generation` | `start_year`, `end_year` | İki üretim serisinin karşılaştırması |
+| `ytbs_get_load_generation_15min` | `start_date`, `end_date`, `sources?` | 15 dk anlık yük ve kaynak bazlı üretim, MW (≤7 gün) |
+| `ytbs_get_hourly_balance` | `start_date`, `end_date` | Saatlik üretim, depolama, ithalat/ihracat, tüketim, MWh (≤92 gün) |
+| `ytbs_get_daily_generation` | `start_date`, `end_date`, `breakdown?`, `source?` | Günlük üretim, kaynak veya kuruluş kırılımı (≤366 gün) |
+| `ytbs_get_installed_capacity` | `on_date?`, `breakdown?` | Günlük kurulu güç ve santral sayısı (kaynak/kuruluş/detay) |
+| `ytbs_get_available_capacity` | `start_date`, `end_date`, `items?` | Saatlik emre amade kapasite, talep tahmini, arz güvenliği (≤31 gün) |
+| `ytbs_get_peaks` | `start_date`, `end_date`, `scope?` | Ulusal puant rekorları veya 9 bölgenin puantı (≤92 gün) |
+| `ytbs_get_sync_status` | — | YTBS deposunun son senkronu, kapsadığı günler, hatalar |
+
+`ytbs_*` tool'ları `ytbs-sync` deposundan okur; yanıtlarda `provisional: true`,
+`missing_days` ve `storage_backend` metadata alanları bulunur.
 
 Tarih biçimi `YYYY-MM-DD`, timezone `Europe/Istanbul`'dur. Yıllık tool'lar tam
 yıl alır. Güç `MW`, enerji `GWh`, trafo kapasitesi `MVA`, hat uzunluğu `km` olarak

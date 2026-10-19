@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import subprocess
 import sys
 import time
 from datetime import date, datetime, timedelta
@@ -44,6 +45,11 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     )
     ap.add_argument("--excel-yok", action="store_true", help="Günlük Excel raporunu çekme")
     ap.add_argument("--bekleme", type=float, default=2.0, help="Günler arası bekleme (sn)")
+    ap.add_argument(
+        "--git-push",
+        action="store_true",
+        help="Veri klasörü bir git deposuysa değişiklikleri commit edip push et",
+    )
     ap.add_argument("-v", "--verbose", action="store_true")
     return ap.parse_args(argv)
 
@@ -93,7 +99,38 @@ def main(argv: list[str] | None = None) -> int:
 
     store.record_sync(synced=synced, failed=failed, finished_at=datetime.now(ISTANBUL))
     print(f"Depo: {store.root} | başarılı {len(synced)}, hatalı {len(failed)}")
-    return 1 if failed else 0
+    pushed = _git_push(store.root, days) if args.git_push else True
+    return 1 if failed or not pushed else 0
+
+
+def _git_push(root: Path, days: list[date]) -> bool:
+    """Veri klasöründeki değişiklikleri commit/push eder. Kimlik doğrulama makinenin git
+    yapılandırmasına (ör. Git Credential Manager) bırakılır; token saklanmaz."""
+
+    def git(*cmd: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            ["git", "-C", str(root), *cmd], check=False, capture_output=True, text=True
+        )
+
+    try:
+        if git("rev-parse", "--is-inside-work-tree").returncode != 0:
+            print(f"HATA: {root} bir git deposu değil; --git-push atlandı.", file=sys.stderr)
+            return False
+    except FileNotFoundError:
+        print("HATA: git bulunamadı; --git-push atlandı.", file=sys.stderr)
+        return False
+    git("add", "-A")
+    if git("diff", "--cached", "--quiet").returncode == 0:
+        print("Git: değişiklik yok.")
+        return True
+    message = f"ytbs-sync {days[0].isoformat()}..{days[-1].isoformat()}"
+    for step in (("commit", "-q", "-m", message), ("push", "-q")):
+        result = git(*step)
+        if result.returncode != 0:
+            print(f"HATA: git {step[0]}: {result.stderr.strip()}", file=sys.stderr)
+            return False
+    print(f"Git: push edildi ({message}).")
+    return True
 
 
 if __name__ == "__main__":

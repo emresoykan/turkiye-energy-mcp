@@ -15,6 +15,8 @@ from .http_client import ResilientHTTPClient
 from .logging import configure_logging
 from .oauth_compat import PublicOAuthCompat
 from .service import EnergyService
+from .ytbs.repository import YtbsRepository
+from .ytbs.service import YtbsService
 
 settings = get_settings()
 configure_logging(settings.log_level)
@@ -24,6 +26,7 @@ cache = AsyncTTLCache()
 http = ResilientHTTPClient(settings)
 teias_client = TeiasClient(settings, http, cache)
 service = EnergyService(teias_client)
+ytbs = YtbsService(YtbsRepository(settings, http, cache))
 oauth: PublicOAuthCompat | None = None
 if settings.public_base_url:
     oauth = PublicOAuthCompat(settings.public_base_url, settings.mcp_path)
@@ -42,7 +45,9 @@ mcp = MCPServer(
     description="TEİAŞ resmî verileri ve TEİAŞ'ın EÜAŞ konulu resmî tabloları.",
     instructions=(
         "EPİAŞ bu sunucunun kapsamı dışındadır. Yanıtlardaki source/subject ve birim "
-        "alanlarını koruyun; MW güç, GWh enerji değeridir."
+        "alanlarını koruyun; MW güç, GWh enerji değeridir. ytbs_* tool'ları TEİAŞ YTBS "
+        "geçici işletme verisidir (lisanssız üretim dahil, geriye dönük revize olur); resmî "
+        "aylık/yıllık istatistik için teias_* tool'larını kullanın."
     ),
     log_level=settings.log_level,
     lifespan=lifespan,
@@ -251,6 +256,79 @@ async def compare_euas_vs_turkey_generation(
 ) -> dict[str, Any]:
     """EÜAŞ ve Türkiye yıllık üretimini ve EÜAŞ payını karşılaştırır."""
     return await _safe(service.compare_euas_vs_turkey_generation(start_year, end_year))
+
+
+
+@mcp.tool(title="YTBS 15 dk yük ve kaynak bazlı üretim", annotations=READ_ONLY)
+async def ytbs_get_load_generation_15min(
+    start_date: str,
+    end_date: str,
+    sources: list[str] | None = None,
+) -> dict[str, Any]:
+    """TEİAŞ YTBS 15 dakikalık anlık yük (MW) ve 18 kaynağa göre üretim (MW); lisanssız dahil.
+
+    En fazla 7 gün. sources örnekleri: rüzgar, güneş, doğalgaz, barajlı, ithal kömür.
+    yuk_mw anlık talep değeridir; enerji (MWh) için ytbs_get_hourly_balance kullanın.
+    """
+    return await _safe(ytbs.get_load_generation_15min(start_date, end_date, sources))
+
+
+@mcp.tool(title="YTBS saatlik enerji dengesi", annotations=READ_ONLY)
+async def ytbs_get_hourly_balance(start_date: str, end_date: str) -> dict[str, Any]:
+    """Saatlik yenilenemez/yenilenebilir üretim, depolama şarj/deşarj, ithalat, ihracat ve
+    tüketim (MWh). En fazla 92 gün."""
+    return await _safe(ytbs.get_hourly_balance(start_date, end_date))
+
+
+@mcp.tool(title="YTBS günlük üretim dağılımı", annotations=READ_ONLY)
+async def ytbs_get_daily_generation(
+    start_date: str,
+    end_date: str,
+    breakdown: str = "kaynak",
+    source: str | None = None,
+) -> dict[str, Any]:
+    """Günlük üretim (MWh), breakdown='kaynak' veya 'kurulus' (EÜAŞ, lisanssız, serbest
+    üretim vb.). En fazla 366 gün; source yalnız kaynak kırılımında filtreler."""
+    return await _safe(ytbs.get_daily_generation(start_date, end_date, breakdown, source))
+
+
+@mcp.tool(title="YTBS günlük kurulu güç", annotations=READ_ONLY)
+async def ytbs_get_installed_capacity(
+    on_date: str | None = None,
+    breakdown: str = "kaynak",
+) -> dict[str, Any]:
+    """Kurulu güç (MW) ve santral sayısı; istenen tarihe en yakın önceki günün anlık
+    görüntüsü. breakdown='kaynak', 'kurulus' veya 'detay' (kuruluş × kaynak)."""
+    return await _safe(ytbs.get_installed_capacity(on_date, breakdown))
+
+
+@mcp.tool(title="YTBS saatlik emre amade kapasite", annotations=READ_ONLY)
+async def ytbs_get_available_capacity(
+    start_date: str,
+    end_date: str,
+    items: list[str] | None = None,
+) -> dict[str, Any]:
+    """Kaynak bazlı saatlik emre amade kapasite, TEİAŞ talep tahmini, emre amadelik ve arz
+    güvenliği oranı. En fazla 31 gün. items örnekleri: rüzgar, toplam, taleptahmin,
+    arzguvenligiorani."""
+    return await _safe(ytbs.get_available_capacity(start_date, end_date, items))
+
+
+@mcp.tool(title="YTBS ulusal ve bölgesel puant", annotations=READ_ONLY)
+async def ytbs_get_peaks(
+    start_date: str,
+    end_date: str,
+    scope: str = "ulusal",
+) -> dict[str, Any]:
+    """scope='ulusal': günlük/aylık/yıllık maks-min anlık talep, saatlik ve günlük tüketim
+    rekorları; scope='bolgesel': 9 Yük Tevzi bölgesinin günlük puantı. En fazla 92 gün."""
+    return await _safe(ytbs.get_peaks(start_date, end_date, scope))
+
+
+@mcp.tool(title="YTBS veri deposu durumu", annotations=READ_ONLY)
+async def ytbs_get_sync_status() -> dict[str, Any]:
+    """ytbs-sync deposunun son senkron zamanı, kapsadığı günler ve son hatalar."""
+    return await _safe(ytbs.get_sync_status())
 
 
 def main() -> None:
