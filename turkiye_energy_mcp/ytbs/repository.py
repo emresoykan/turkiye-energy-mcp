@@ -21,6 +21,7 @@ from .parsers import SOURCE
 from .store import MANIFEST, CsvStore
 
 GITHUB_API = "https://api.github.com"
+GITHUB_RAW = "https://raw.githubusercontent.com"
 
 
 def _months(start: date, end: date) -> list[str]:
@@ -56,21 +57,28 @@ class YtbsRepository:
             )
 
     async def _github_text(self, path: str) -> str | None:
-        """Depodaki dosya metni; dosya yoksa None."""
+        """Depodaki dosya metni; dosya yoksa None.
+
+        Token varsa Contents API (private repo, 5000 istek/saat); yoksa public repo için
+        raw.githubusercontent.com (token'sız API'nin IP başına 60 istek/saat sınırına takılmaz).
+        """
         repo = self.settings.ytbs_data_repo
-        headers = {
-            "Accept": "application/vnd.github.raw+json",
-            "X-GitHub-Api-Version": "2022-11-28",
-        }
+        ref = self.settings.ytbs_data_ref
         if self.settings.ytbs_data_token:
-            headers["Authorization"] = f"Bearer {self.settings.ytbs_data_token.get_secret_value()}"
-        url = f"{GITHUB_API}/repos/{repo}/contents/{path}"
+            url = f"{GITHUB_API}/repos/{repo}/contents/{path}"
+            params: dict[str, str] | None = {"ref": ref}
+            headers = {
+                "Accept": "application/vnd.github.raw+json",
+                "X-GitHub-Api-Version": "2022-11-28",
+                "Authorization": f"Bearer {self.settings.ytbs_data_token.get_secret_value()}",
+            }
+        else:
+            url = f"{GITHUB_RAW}/{repo}/{ref}/{path}"
+            params, headers = None, {}
 
         async def load() -> str:
             try:
-                response = await self.http.get(
-                    url, params={"ref": self.settings.ytbs_data_ref}, headers=headers
-                )
+                response = await self.http.get(url, params=params, headers=headers)
             except EnergyDataError as exc:
                 if exc.code == ErrorCode.DATA_NOT_AVAILABLE:
                     return ""  # 404: bu ay için dosya yok
@@ -78,7 +86,7 @@ class YtbsRepository:
             return response.text
 
         text = await self.cache.get_or_set(
-            f"ytbs:{repo}:{path}", load, self.settings.cache_daily_ttl_seconds
+            f"ytbs:{repo}:{ref}:{path}", load, self.settings.cache_daily_ttl_seconds
         )
         return text or None
 

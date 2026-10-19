@@ -99,3 +99,19 @@ async def test_github_backend_reads_month_files_with_token(data_dir):
     assert request.headers["Authorization"] == "Bearer secret-read-token"
     assert request.url.params["ref"] == "main"
     assert result["metadata"]["storage_backend"] == "GitHub acme/ytbs-veri@main"
+
+
+@respx.mock
+async def test_public_repo_without_token_reads_raw_files_from_data_branch(data_dir):
+    base = "https://raw.githubusercontent.com/emresoykan/turkiye-energy-mcp/ytbs-data"
+    month = (data_dir / "puant" / "2026" / "2026-10.csv").read_text(encoding="utf-8")
+    manifest = (data_dir / "manifest.json").read_text(encoding="utf-8")
+    route = respx.get(f"{base}/puant/2026/2026-10.csv").mock(
+        return_value=httpx.Response(200, text=month)
+    )
+    respx.get(f"{base}/manifest.json").mock(return_value=httpx.Response(200, text=manifest))
+
+    svc = make_service(ytbs_data_repo="emresoykan/turkiye-energy-mcp", ytbs_data_ref="ytbs-data")
+    result = await svc.get_peaks("2026-10-01", "2026-10-01")
+    assert len(result["data"]) == 20
+    assert "Authorization" not in route.calls.last.request.headers
