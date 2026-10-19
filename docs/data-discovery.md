@@ -66,7 +66,8 @@ belgelenmemiş web uygulaması sözleşmeleridir; şema değişikliği teknik ri
 - **Raporlar sayfası:** Yalnız 3 statik doküman (YTBS tanıtım sunumları, 2023 Kısa Devre
   Akımları); veri serisi yok.
 - **Geçmiş gün:** PrimeFaces AJAX POST'u (`formdash:gunlukRapor`) Türkiye'den doğrulandı
-  (2026-10-18: 96/96 nokta). Yanıt bir JSF `partial-response`'tur; CDATA, dizi sonunda
+  (2026-10-18: 96/96 nokta; `ytbs-sync` ile 2026-10-17/18 canlı çekildi). Cari günün Excel
+  raporu gün bitmeden XLSX dönmüyor; `ytbs-sync` bugünün raporunu istemez. Yanıt bir JSF `partial-response`'tur; CDATA, dizi sonunda
   `]]><![CDATA[` ile bölünür, ayrıştırmadan önce bu ayraç kaldırılmalıdır.
 - **15 dk yük serisi:** 2026-10-01 için serinin maksimumu (46.441 MW) günlük Excel'deki
   "Maksimum anlık talep (MW)" değeriyle birebir aynı; seri anlık talep olarak ele alınmalı,
