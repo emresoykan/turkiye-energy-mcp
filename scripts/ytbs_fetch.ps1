@@ -86,7 +86,35 @@ function Get-FormBody($page, [datetime]$day) {
     }
 }
 
+function Invoke-FormPost($session, $page, $body, $headers) {
+    $resp = Invoke-WebRequest -Uri $page.PostUrl -Method Post -Body $body -Headers $headers `
+        -ContentType 'application/x-www-form-urlencoded; charset=UTF-8' `
+        -WebSession $session -UseBasicParsing -UserAgent $UserAgent
+    Get-Utf8Text $resp
+}
+
+function Read-DayData([string]$text, $page, [string]$want) {
+    $yuk = Get-JsArray $text 'gunlukYukEgrisiData'
+    $uretim = Get-JsArray $text 'gunlukUretimEgrisiData'
+    if ($null -eq $yuk -or $null -eq $uretim) { return $null }
+    $kaynaklar = Get-JsArray $text 'santralKaynakListesi'
+    if ($null -eq $kaynaklar) { $kaynaklar = Get-JsArray $page.Html 'santralKaynakListesi' }
+    if (-not ($yuk[0].zaman -like "$want*")) {
+        throw "Sunucu istenen günü döndürmedi: istenen $want, gelen $($yuk[0].zaman)"
+    }
+    [pscustomobject]@{ Page = $page; Yuk = $yuk; Uretim = $uretim; Kaynaklar = $kaynaklar }
+}
+
+function Save-Debug([string]$text, [string]$name) {
+    $path = Join-Path $CiktiKlasoru $name
+    [IO.File]::WriteAllText($path, $text, (New-Object Text.UTF8Encoding $false))
+    $path
+}
+
+# Önce sayfanın kendi AJAX çağrısı denenir; veri gelmezse normal (tam sayfa) form POST'u.
 function Get-DayData($session, [datetime]$day) {
+    $want = $day.ToString('yyyy-MM-dd', $Inv)
+
     $page = Open-Page $session
     $body = Get-FormBody $page $day
     $body['jakarta.faces.partial.ajax'] = 'true'
@@ -95,26 +123,20 @@ function Get-DayData($session, [datetime]$day) {
     $body['jakarta.faces.partial.render'] = 'formdash'
     $body['formdash:gunlukRapor'] = 'formdash:gunlukRapor'
     $headers = @{ 'Faces-Request' = 'partial/ajax'; 'X-Requested-With' = 'XMLHttpRequest' }
+    $ajaxText = Invoke-FormPost $session $page $body $headers
+    $data = Read-DayData $ajaxText $page $want
+    if ($data) { return $data }
+    $ajaxDebug = Save-Debug $ajaxText "ytbs_debug_ajax_$want.xml"
 
-    $resp = Invoke-WebRequest -Uri $page.PostUrl -Method Post -Body $body -Headers $headers `
-        -ContentType 'application/x-www-form-urlencoded; charset=UTF-8' `
-        -WebSession $session -UseBasicParsing -UserAgent $UserAgent
-    $text = Get-Utf8Text $resp
+    $page = Open-Page $session
+    $body = Get-FormBody $page $day
+    $body['formdash:gunlukRapor'] = 'formdash:gunlukRapor'
+    $fullText = Invoke-FormPost $session $page $body @{}
+    $data = Read-DayData $fullText $page $want
+    if ($data) { return $data }
+    $fullDebug = Save-Debug $fullText "ytbs_debug_full_$want.html"
 
-    $yuk = Get-JsArray $text 'gunlukYukEgrisiData'
-    $uretim = Get-JsArray $text 'gunlukUretimEgrisiData'
-    $kaynaklar = Get-JsArray $text 'santralKaynakListesi'
-    if ($null -eq $kaynaklar) { $kaynaklar = Get-JsArray $page.Html 'santralKaynakListesi' }
-    if ($null -eq $yuk -or $null -eq $uretim) {
-        $snippet = $text.Substring(0, [Math]::Min(400, $text.Length))
-        throw "AJAX yanıtında veri yok. Yanıt başı: $snippet"
-    }
-
-    $want = $day.ToString('yyyy-MM-dd', $Inv)
-    if (-not ($yuk[0].zaman -like "$want*")) {
-        throw "Sunucu istenen günü döndürmedi: istenen $want, gelen $($yuk[0].zaman)"
-    }
-    [pscustomobject]@{ Page = $page; Yuk = $yuk; Uretim = $uretim; Kaynaklar = $kaynaklar }
+    throw "Veri bulunamadı. Hata ayıklama dosyaları: $ajaxDebug ; $fullDebug"
 }
 
 function Save-DailyExcel($session, $page, [datetime]$day, [string]$dir) {
