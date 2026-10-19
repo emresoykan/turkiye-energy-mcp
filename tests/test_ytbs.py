@@ -220,3 +220,56 @@ def test_sync_cli_git_push_commits_changes(tmp_path, monkeypatch):
         ["git", "-C", str(remote), "log", "--oneline"], capture_output=True, text=True, check=True
     ).stdout
     assert "ytbs-sync 2026-10-18..2026-10-18" in log
+
+
+def _cli_with(monkeypatch, handler, today):
+    from turkiye_energy_mcp.ytbs import cli
+
+    monkeypatch.setattr(
+        cli, "YtbsClient", lambda: YtbsClient(transport=httpx.MockTransport(handler))
+    )
+    monkeypatch.setattr(cli, "_today", lambda: today)
+    return cli
+
+
+def test_sync_skips_daily_report_for_today(tmp_path, monkeypatch):
+    excel_posts = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET":
+            return httpx.Response(200, text=PAGE)
+        if "partial.ajax=true" not in request.content.decode():
+            excel_posts.append(request)
+        return httpx.Response(200, text=AJAX)
+
+    cli = _cli_with(monkeypatch, handler, today=date(2026, 10, 18))
+    args = ["--gun", "1", "--veri-klasoru", str(tmp_path), "--bekleme", "0"]
+    assert cli.main(args) == 0
+    assert excel_posts == []
+    rows = CsvStore(tmp_path).read("15dk_yuk_uretim", date(2026, 10, 18), date(2026, 10, 18))
+    assert len(rows) == 96
+
+
+def test_sync_keeps_series_when_past_daily_report_fails(tmp_path, monkeypatch):
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET":
+            return httpx.Response(200, text=PAGE)
+        if "partial.ajax=true" in request.content.decode():
+            return httpx.Response(200, text=AJAX)
+        return httpx.Response(200, text="<html>rapor yok</html>")
+
+    cli = _cli_with(monkeypatch, handler, today=date(2026, 10, 19))
+    args = [
+        "--baslangic",
+        "2026-10-18",
+        "--bitis",
+        "2026-10-18",
+        "--veri-klasoru",
+        str(tmp_path),
+        "--bekleme",
+        "0",
+    ]
+    assert cli.main(args) == 1
+    store = CsvStore(tmp_path)
+    assert len(store.read("15dk_yuk_uretim", date(2026, 10, 18), date(2026, 10, 18))) == 96
+    assert "2026-10-18" in store.load_manifest()["son_hatalar"]

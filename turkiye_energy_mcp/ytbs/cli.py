@@ -54,8 +54,12 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     return ap.parse_args(argv)
 
 
+def _today() -> date:
+    return datetime.now(ISTANBUL).date()
+
+
 def _day_range(args: argparse.Namespace) -> list[date]:
-    end = args.bitis or datetime.now(ISTANBUL).date()
+    end = args.bitis or _today()
     start = args.baslangic or end - timedelta(days=max(args.gun, 1) - 1)
     start = max(start, EARLIEST_DAY)
     if start > end:
@@ -70,18 +74,25 @@ def main(argv: list[str] | None = None) -> int:
     days = _day_range(args)
     synced: list[str] = []
     failed: dict[str, str] = {}
+    today = _today()
 
     with YtbsClient() as client:
         for i, day in enumerate(days):
             label = day.isoformat()
             try:
-                result = client.fetch_day(day, with_excel=not args.excel_yok)
-                store.upsert(SERIES_TABLE, result.series, result.fetched_at)
-                summary = f"{sum(r['yuk_mw'] is not None for r in result.series)}/96 nokta"
-                if result.excel is not None:
-                    tables = parse_daily_report(result.excel, expected_day=day)
+                series = client.fetch_series(day)
+                fetched_at = datetime.now(ISTANBUL)
+                store.upsert(SERIES_TABLE, series, fetched_at)
+                summary = f"{sum(r['yuk_mw'] is not None for r in series)}/96 nokta"
+                # Günlük rapor gün bitmeden yayımlanmıyor (XLSX yerine başka içerik döner);
+                # bugünün raporu bir sonraki senkronda alınır.
+                if not args.excel_yok and day >= today:
+                    summary += " | günlük rapor gün bitince alınacak"
+                elif not args.excel_yok:
+                    excel = client.fetch_daily_excel(day)
+                    tables = parse_daily_report(excel, expected_day=day)
                     for table, rows in tables.items():
-                        store.upsert(table, rows, result.fetched_at)
+                        store.upsert(table, rows, fetched_at)
                     gap = balance_gap_mwh(tables["saatlik_denge"])
                     if gap is not None and gap > BALANCE_TOLERANCE_MWH:
                         print(
