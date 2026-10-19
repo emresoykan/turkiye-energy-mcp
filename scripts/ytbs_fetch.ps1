@@ -61,8 +61,15 @@ function Format-Num($v) {
 
 # Her gün için temiz bir sayfa oturumu açar: çerez + ViewState + form alanları.
 function Open-Page($session) {
-    $resp = Invoke-WebRequest -Uri $PageUrl -WebSession $session -UseBasicParsing -UserAgent $UserAgent
-    $html = Get-Utf8Text $resp
+    $html = $null
+    for ($try = 1; $try -le 2; $try++) {
+        $resp = Invoke-WebRequest -Uri $PageUrl -WebSession $session -UseBasicParsing -UserAgent $UserAgent
+        $html = Get-Utf8Text $resp
+        if ($html -match 'id="formdash"') { break }
+        $dbg = Save-Debug $html "ytbs_debug_get_$try.html"
+        Write-Warning "Sayfa beklenen formu içermiyor (HTTP $($resp.StatusCode), $($html.Length) karakter): $dbg"
+        if ($try -lt 2) { Start-Sleep -Seconds 5 }
+    }
     $action = Get-FirstMatch $html 'id="formdash"[^>]*action="([^"]+)"' 'formdash action'
     $images = [regex]::Matches($html, 'type="image" src="[^"]*excel\.png[^"]*" name="([^"]+)"')
     [pscustomobject]@{
