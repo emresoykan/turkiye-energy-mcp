@@ -133,7 +133,12 @@ async def teias_get_generation(
     end_year: int,
     source: str | None = None,
 ) -> dict[str, Any]:
-    """Türkiye yıllık brüt elektrik üretimini kaynak bazında GWh olarak getirir."""
+    """Türkiye yıllık brüt elektrik üretimini kaynak bazında GWh olarak getirir.
+
+    TEİAŞ bu tabloda rüzgâr ile jeotermali (geothermal_and_wind) ve taş kömürü ile asfaltiti
+    (hard_coal_and_asphaltite) birleşik raporlar; bu kaynaklardan biri sorulursa birleşik seri
+    döner ve metadata.warnings değerin saf kaynak olmadığını belirtir.
+    """
     return await _safe(service.get_generation(start_year, end_year, source))
 
 

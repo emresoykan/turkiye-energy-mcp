@@ -45,6 +45,9 @@ SOURCE_NAMES = {
     "ithal komur": "imported_coal",
     "tas komuru": "hard_coal",
     "taskomuru": "hard_coal",
+    "tas komur": "hard_coal",
+    "hard coal": "hard_coal",
+    "asfaltit": "asphaltite",
     "komur": "coal_total",
     "termik": "thermal",
     "thermal": "thermal",
@@ -76,6 +79,51 @@ def _canonical_source(value: str | None) -> str | None:
         return None
     key = normalize_key(value)
     return SOURCE_NAMES.get(key, key.replace(" ", "_"))
+
+
+# Bazı TEİAŞ tabloları kaynakları birleşik sütunda yayımlar. Tabloda saf kaynak yoksa sorgu
+# birleşik seriye yönlendirilir; dönen `source` birleşik anahtar kalır ve yanıta uyarı eklenir,
+# böylece birleşik değer saf kaynak değeri gibi sunulmaz.
+COMBINED_SOURCES = {
+    "geothermal_and_wind": (("geothermal", "wind"), "rüzgâr ile jeotermali"),
+    "hard_coal_and_asphaltite": (("hard_coal", "asphaltite"), "taş kömürü ile asfaltiti"),
+    "hydro_geothermal_wind": (("hydro", "geothermal", "wind"), "hidro, jeotermal ve rüzgârı"),
+}
+SOURCE_LABELS_TR = {
+    "wind": "rüzgâr",
+    "geothermal": "jeotermal",
+    "hard_coal": "taş kömürü",
+    "asphaltite": "asfaltit",
+    "hydro": "hidro",
+}
+
+
+def _resolve_source(source_key: str | None, available: set[str]) -> tuple[str | None, str | None]:
+    """Tabloda bulunmayan saf kaynağı, onu içeren birleşik kategoriye eşler.
+
+    Dönüş: (filtrelenecek kaynak anahtarı, uyarı veya None)."""
+    if source_key is None or source_key in available:
+        return source_key, None
+    for combined, (members, phrase) in COMBINED_SOURCES.items():
+        if source_key in members and combined in available:
+            warning = (
+                f"TEİAŞ bu tabloda {phrase} birlikte raporlar (source='{combined}'); "
+                f"değer saf {SOURCE_LABELS_TR[source_key]} değildir."
+            )
+            return combined, warning
+    return source_key, None
+
+
+def _source_warning_meta(warning: str | None, requested: str | None) -> dict[str, Any]:
+    if warning is None:
+        return {}
+    return {"warnings": [warning], "requested_source": requested}
+
+
+def _with_warning(notes: str | None, warning: str | None) -> str | None:
+    if warning is None:
+        return notes
+    return f"UYARI: {warning}" + (f" {notes}" if notes else "")
 
 
 def _filter_years(
@@ -341,9 +389,9 @@ class EnergyService:
             latest_available_year=latest,
             series_years=[item["year"] for item in records],
         )
-        source_key = _canonical_source(source)
-        if source_key == "geothermal":
-            source_key = "geothermal_and_wind"
+        source_key, warning = _resolve_source(
+            _canonical_source(source), {record["source"] for record in records}
+        )
         data = [
             record
             for record in _filter_years(records, start_year, end_year)
@@ -363,10 +411,13 @@ class EnergyService:
             requested_end=end_year,
             unit="GWh",
             original_unit="GWh",
-            notes=(
-                "En güncel resmi tabloda jeotermal ve rüzgâr tek sütunda birleştirilmiş olabilir; "
-                "kaynak='jeotermal' sorgusu birleşik seriyi döndürür."
+            notes=_with_warning(
+                "En güncel resmi tabloda jeotermal ile rüzgâr ve taş kömürü ile asfaltit tek "
+                "sütunda birleştirilmiş olabilir; source='rüzgâr', 'jeotermal' veya 'taş kömürü' "
+                "sorgusu birleşik seriyi döndürür.",
+                warning,
             ),
+            extra_meta=_source_warning_meta(warning, source),
         )
 
     async def get_installed_capacity(
@@ -384,7 +435,9 @@ class EnergyService:
             latest_available_year=latest,
             series_years=[item["year"] for item in records],
         )
-        source_key = _canonical_source(source)
+        source_key, warning = _resolve_source(
+            _canonical_source(source), {record["source"] for record in records}
+        )
         data = [
             record
             for record in _filter_years(records, start_year, end_year)
@@ -404,6 +457,8 @@ class EnergyService:
             requested_end=end_year,
             unit="MW",
             original_unit="MW",
+            notes=_with_warning(None, warning),
+            extra_meta=_source_warning_meta(warning, source),
         )
 
     async def get_peak_demand(self, start_year: int, end_year: int) -> dict[str, Any]:
@@ -841,10 +896,10 @@ class EnergyService:
         start_year, end_year = parse_year_range(start_year, end_year)
         if source:
             workbook = await self.teias.annual_workbook("euas_generation_by_source")
-            source_key = _canonical_source(source)
-            if source_key == "hydro":
-                source_key = "hydro_geothermal_wind"
             records = parse_euas_generation_by_source(workbook.content)
+            source_key, warning = _resolve_source(
+                _canonical_source(source), {item["source"] for item in records}
+            )
             latest = workbook.period_end or max(item["year"] for item in records)
             _ensure_annual_overlap(
                 requested_start=start_year,
@@ -857,10 +912,12 @@ class EnergyService:
                 for item in _filter_years(records, start_year, end_year)
                 if item["source"] == source_key
             ]
-            notes = (
-                "TEİAŞ tablosunda EÜAŞ hidro, jeotermal ve rüzgâr üretimi birleşik sütundur."
+            notes = _with_warning(
+                "TEİAŞ tablosunda EÜAŞ hidro, jeotermal ve rüzgâr üretimi birleşik sütundur.",
+                warning,
             )
         else:
+            warning = None
             workbook = await self.teias.annual_workbook("generation_by_organization")
             records = parse_generation_by_organization(workbook.content)
             latest = workbook.period_end or max(item["year"] for item in records)
@@ -891,6 +948,7 @@ class EnergyService:
             unit="GWh",
             original_unit="GWh",
             notes=notes,
+            extra_meta=_source_warning_meta(warning, source),
         )
 
     async def get_euas_monthly_generation(
