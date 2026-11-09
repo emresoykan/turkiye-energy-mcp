@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     # HMAC key for stateless OAuth tokens (e.g. `openssl rand -hex 32`). Unset = random
     # per-process key: tokens stop working after every restart/redeploy.
     oauth_signing_key: SecretStr | None = None
+    # Optional shared secret: when set, the MCP transport requires a matching `X-API-Key`
+    # header (health and OAuth endpoints stay open). Unset = tools are public.
+    mcp_api_key: SecretStr | None = None
 
 
 @lru_cache(maxsize=1)

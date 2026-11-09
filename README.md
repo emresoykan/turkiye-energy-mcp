@@ -133,6 +133,7 @@ MCP_TRANSPORT=stdio turkiye-energy-mcp
 | `PUBLIC_BASE_URL` | boş | Claude connector OAuth discovery origin'i (ör. Railway domain) |
 | `OAUTH_SIGNING_KEY` | boş | OAuth token'larını imzalayan HMAC anahtarı (`openssl rand -hex 32`). Boşsa her süreçte rastgele anahtar üretilir ve her deploy/restart sonrası connector yeniden yetkilendirme ister |
 | `OAUTH_ALLOWED_REDIRECT_HOSTS` | `claude.ai,claude.com` | DCR ile kayıt olmamış istemciler için `/authorize`'ın yönlendirebileceği HTTPS host'ları (virgülle ayrılmış, tam eşleşme). `localhost`/`127.0.0.1` her zaman serbesttir |
+| `MCP_API_KEY` | boş | Tanımlıysa `/mcp` eşleşen `X-API-Key` header'ı ister; health ve OAuth uçları açık kalır (bkz. Erişim Güvenliği) |
 | `YTBS_DATA_DIR` | boş | `ytbs-sync` CSV deposunun yerel klasörü (verilirse öncelikli) |
 | `YTBS_DATA_REPO` | boş | CSV deposunun GitHub reposu, `owner/repo` (Railway için) |
 | `YTBS_DATA_REF` | `main` | Veri reposunun dalı |
@@ -295,8 +296,39 @@ HOST=0.0.0.0
 ```
 
 `PUBLIC_BASE_URL` Claude'un beklediği OAuth discovery / Dynamic Client Registration
-uçlarını açar. MCP araçları yine herkese açık kalır; OAuth yalnızca bağlayıcı
-uyumluluğu içindir.
+uçlarını açar. OAuth yalnızca bağlayıcı uyumluluğu içindir; verdiği token'lar `/mcp`
+erişimini kısıtlamaz. `MCP_API_KEY` tanımlı değilse MCP araçları URL'i bilen herkese
+açıktır; erişimi kısıtlamak için aşağıdaki API anahtarını kullanın.
+
+### Erişim Güvenliği (API Anahtarı)
+
+Veri kamuya açık olsa da, koruma olmadan **URL'i bilen herkes** bu deployment üzerinden
+TEİAŞ/GitHub'a istek attırabilir ve Railway kaynaklarını tüketebilir. `MCP_API_KEY`
+ayarlandığında MCP transport'u (`/mcp` ve açık listede olmayan her yol) eşleşen bir
+`X-API-Key` header'ı ister (sabit zamanlı karşılaştırma). Açık kalan yollar yalnızca tam
+eşleşmeyle şunlardır: `/health` (Railway health check header göndermez), `/` ve OAuth
+uçları (`/.well-known/*` discovery, `/register`, `/authorize`, `/token`) — Claude
+discovery sırasında özel header göndermez. `/mcp/`, `//mcp`, `/%6Dcp` veya `OPTIONS`
+gibi varyasyonlar da anahtar ister. Değişken boşsa auth devre dışıdır ve sunucu log'a
+uyarı basar.
+
+**Kesintisiz devreye alma sırası** — ters sırada yaparsanız connector arada 401 alır:
+
+1. Bu kodu deploy edin (`MCP_API_KEY` henüz tanımsız → auth kapalı, hiçbir şey bozulmaz).
+2. Anahtarı üretin: `openssl rand -hex 32`
+3. Claude connector ayarlarında **Add header** ile `X-API-Key` = üretilen değeri girin.
+   Connector hâlâ çalışır; sunucu bu header'ı şimdilik yok sayar. Claude Code için:
+   `claude mcp add --transport http turkiye-energy <url>/mcp --header "X-API-Key: <anahtar>"`
+4. Railway'de `MCP_API_KEY` değişkenini aynı değerle tanımlayın. Servis yeniden
+   başladığı anda auth devreye girer ve connector zaten header'ı gönderiyordur.
+
+Anahtar sızarsa 2-4. adımları yeni bir değerle tekrarlayın; URL'i değiştirmek
+veya connector'ı silip yeniden kurmak gerekmez.
+
+Railway her deploy'da servisi yeniden başlatır: `OAUTH_SIGNING_KEY` tanımlı değilse OAuth
+token'ları da her deploy'da geçersizleşir ve connector yeniden yetkilendirme ister. Bunu
+önlemek için `OAUTH_SIGNING_KEY` değişkenini de (`openssl rand -hex 32`) sabit bir değerle
+tanımlayın.
 
 Claude Code remote HTTP:
 

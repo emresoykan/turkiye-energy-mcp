@@ -7,6 +7,7 @@ from mcp.types import ToolAnnotations
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+from .api_key import ApiKeyMiddleware
 from .cache import AsyncTTLCache
 from .clients.teias import TeiasClient
 from .config import get_settings
@@ -344,17 +345,49 @@ async def ytbs_get_sync_status() -> dict[str, Any]:
     return await _safe(ytbs.get_sync_status())
 
 
+# Exact paths reachable without X-API-Key when MCP_API_KEY is set: the platform health
+# check and the OAuth handshake (claude.ai sends no custom headers during discovery).
+OPEN_PATHS = (
+    "/",
+    "/health",
+    "/register",
+    "/authorize",
+    "/token",
+    "/.well-known/oauth-authorization-server",
+    "/.well-known/openid-configuration",
+    "/.well-known/oauth-protected-resource",
+    f"/.well-known/oauth-protected-resource{settings.mcp_path}",
+    "/.well-known/jwks.json",
+)
+
+
+def build_http_app() -> Any:
+    app = mcp.streamable_http_app(
+        streamable_http_path=settings.mcp_path,
+        stateless_http=True,
+        json_response=True,
+        host=settings.host,
+    )
+    api_key = settings.mcp_api_key.get_secret_value().strip() if settings.mcp_api_key else ""
+    if not api_key:
+        logger.warning("MCP_API_KEY is not set: %s is open to anyone with the URL.",
+                       settings.mcp_path)
+        return app
+    logger.info("X-API-Key required on everything except %s", ", ".join(OPEN_PATHS))
+    return ApiKeyMiddleware(app, api_key, OPEN_PATHS)
+
+
 def main() -> None:
     if settings.mcp_transport == "stdio":
         mcp.run(transport="stdio")
     else:
-        mcp.run(
-            transport="streamable-http",
+        import uvicorn
+
+        uvicorn.run(
+            build_http_app(),
             host=settings.host,
             port=settings.port,
-            streamable_http_path=settings.mcp_path,
-            stateless_http=True,
-            json_response=True,
+            log_level=settings.log_level.lower(),
         )
 
 
