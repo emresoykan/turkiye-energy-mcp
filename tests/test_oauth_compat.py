@@ -166,7 +166,9 @@ async def test_authorize_rejects_unlisted_redirect_without_redirecting(redirect_
 
 
 async def test_authorize_registered_client_requires_exact_registered_uri():
-    oauth = PublicOAuthCompat("https://example.test")
+    oauth = PublicOAuthCompat(
+        "https://example.test", allowed_redirect_hosts=("app.example.org", "claude.ai")
+    )
     client_id = await _register(oauth, ["https://app.example.org/cb"])
 
     ok = await _authorize(oauth, client_id, "https://app.example.org/cb")
@@ -178,6 +180,24 @@ async def test_authorize_registered_client_requires_exact_registered_uri():
         assert "location" not in rejected.headers
     # Rejected URIs are never appended to the registered client.
     assert oauth.store.clients[client_id].redirect_uris == ["https://app.example.org/cb"]
+
+
+@pytest.mark.parametrize(
+    "uris",
+    [["https://evil.test/cb"], [CLAUDE_CALLBACK, "https://evil.test/cb"], ["http://claude.ai/cb"]],
+)
+async def test_register_rejects_redirect_uris_outside_allowlist(uris):
+    # DCR is unauthenticated: registering evil.test must not bypass the allowlist.
+    oauth = PublicOAuthCompat("https://example.test")
+    response = await oauth.register(DummyRequest(json={"redirect_uris": uris}))
+    assert response.status_code == 400
+    assert not oauth.store.clients
+
+
+async def test_register_accepts_claude_and_loopback_callbacks():
+    oauth = PublicOAuthCompat("https://example.test")
+    client_id = await _register(oauth, [CLAUDE_CALLBACK, "http://localhost:6274/cb"])
+    assert (await _authorize(oauth, client_id, CLAUDE_CALLBACK)).status_code == 302
 
 
 async def test_allowed_redirect_hosts_override():

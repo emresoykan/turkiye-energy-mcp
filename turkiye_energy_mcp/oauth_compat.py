@@ -263,6 +263,22 @@ class PublicOAuthCompat:
                 },
                 status_code=400,
             )
+        # DCR is unauthenticated, so registration must not become a way around the
+        # /authorize allowlist: anyone could register https://evil.test and then use
+        # this server as an open redirect.
+        rejected = [
+            uri
+            for uri in redirect_uris
+            if not _redirect_host_allowed(uri, self.allowed_redirect_hosts)
+        ]
+        if rejected:
+            return JSONResponse(
+                {
+                    "error": "invalid_redirect_uri",
+                    "error_description": "redirect_uri host not allowed",
+                },
+                status_code=400,
+            )
         self.store.prune()
         client_id = f"public-{secrets.token_urlsafe(16)}"
         client = _Client(

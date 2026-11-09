@@ -16,6 +16,9 @@ dependencies = [
   "pandas>=2.2",
   "pydantic>=2.11",
   "pydantic-settings>=2.10",
+  # Imported directly (OAuth shim, API-key middleware, HTTP runner).
+  "starlette>=0.46,<2",
+  "uvicorn>=0.31,<1",
   "tenacity>=9.1",
   "xlrd>=2.0",
 ]
