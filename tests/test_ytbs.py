@@ -347,11 +347,13 @@ def test_num_handles_missing_and_turkish_format(raw, expected):
     assert _num(raw) == expected
 
 
-def test_num_rejects_text_with_parsing_error():
+@pytest.mark.parametrize("raw", ["yok", "1.234", "-12.500"])
+def test_num_rejects_text_with_parsing_error(raw):
+    # "1.234" is ambiguous in a Turkish source (1234 or 1.234): fail, don't guess.
     from turkiye_energy_mcp.ytbs.parsers import _num
 
     with pytest.raises(EnergyDataError) as exc:
-        _num("yok")
+        _num(raw)
     assert exc.value.code == ErrorCode.PARSING_ERROR
 
 

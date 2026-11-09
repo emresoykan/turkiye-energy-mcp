@@ -51,7 +51,9 @@ _MISSING = {"", "-", "--", "—"}
 def _num(value: Any) -> float | None:
     """Sayı hücresi. Boş ve "-" eksik (None) sayılır. Metin hücrelerde Türkçe biçim
     ("1.234,5") desteklenir: virgül varsa ondalık ayracıdır ve noktalar binlik ayracıdır.
-    Virgülsüz tek nokta ("12.5") ondalık kabul edilir; birden fazla nokta binliktir."""
+    Virgülsüz tek nokta ("12.5") ondalık kabul edilir; birden fazla nokta binliktir.
+    "1.234" gibi tek nokta + tam üç hane belirsizdir (Türkçe binlik mi, ondalık mı?):
+    1000 kat sessiz hata riski yerine PARSING_ERROR verilir."""
     if value is None:
         return None
     if isinstance(value, (int, float)):
@@ -59,6 +61,10 @@ def _num(value: Any) -> float | None:
     text = str(value).strip().replace("\xa0", "").replace(" ", "")
     if text in _MISSING:
         return None
+    if re.fullmatch(r"-?\d{1,3}\.\d{3}", text):
+        raise _parsing_error(
+            "YTBS raporunda belirsiz sayı biçimi (binlik mi ondalık mı?).", value=str(value)
+        )
     if "," in text or text.count(".") > 1:
         text = text.replace(".", "").replace(",", ".")
     try:
