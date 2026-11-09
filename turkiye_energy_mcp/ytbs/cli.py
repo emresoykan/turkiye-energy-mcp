@@ -31,6 +31,7 @@ DEFAULT_DATA_DIR = Path.home() / "ytbs-veri"
 EARLIEST_DAY = date(2016, 1, 1)  # sayfadaki takvimin alt sınırı
 BALANCE_TOLERANCE_MWH = 1.0
 _log_path: Path | None = None
+logger = logging.getLogger(__name__)
 
 
 def _say(message: str, *, error: bool = False) -> None:
@@ -93,37 +94,43 @@ def main(argv: list[str] | None = None) -> int:
     failed: dict[str, str] = {}
     today = _today()
 
-    with YtbsClient() as client:
-        for i, day in enumerate(days):
-            label = day.isoformat()
-            try:
-                series = client.fetch_series(day)
-                fetched_at = datetime.now(ISTANBUL)
-                store.upsert(SERIES_TABLE, series, fetched_at)
-                summary = f"{sum(r['yuk_mw'] is not None for r in series)}/96 nokta"
-                # Günlük rapor gün bitmeden yayımlanmıyor (XLSX yerine başka içerik döner);
-                # bugünün raporu bir sonraki senkronda alınır.
-                if not args.excel_yok and day >= today:
-                    summary += " | günlük rapor gün bitince alınacak"
-                elif not args.excel_yok:
-                    excel = client.fetch_daily_excel(day)
-                    tables = parse_daily_report(excel, expected_day=day)
-                    for table, rows in tables.items():
-                        store.upsert(table, rows, fetched_at)
-                    gap = balance_gap_mwh(tables["saatlik_denge"])
-                    if gap is not None and gap > BALANCE_TOLERANCE_MWH:
-                        _say(f"UYARI {label}: saatlik enerji dengesi farkı {gap:.2f} MWh")
-                    summary += f" | {len(tables['saatlik_denge'])} saatlik denge satırı"
-                synced.append(label)
-                _say(f"{label}: {summary}")
-            except EnergyDataError as exc:
-                failed[label] = f"{exc.code.value}: {exc.message}"
-                _say(f"HATA {label}: {exc.message}", error=True)
-            if i < len(days) - 1:
-                time.sleep(args.bekleme)
-
-    store.record_sync(synced=synced, failed=failed, finished_at=datetime.now(ISTANBUL))
-    _say(f"Depo: {store.root} | başarılı {len(synced)}, hatalı {len(failed)}")
+    # Yarıda kesilse bile (Ctrl+C, beklenmeyen hata) yazılan günler manifest'e işlenir.
+    try:
+        with YtbsClient() as client:
+            for i, day in enumerate(days):
+                label = day.isoformat()
+                try:
+                    series = client.fetch_series(day)
+                    fetched_at = datetime.now(ISTANBUL)
+                    store.upsert(SERIES_TABLE, series, fetched_at)
+                    summary = f"{sum(r['yuk_mw'] is not None for r in series)}/96 nokta"
+                    # Günlük rapor gün bitmeden yayımlanmıyor (XLSX yerine başka içerik döner);
+                    # bugünün raporu bir sonraki senkronda alınır.
+                    if not args.excel_yok and day >= today:
+                        summary += " | günlük rapor gün bitince alınacak"
+                    elif not args.excel_yok:
+                        excel = client.fetch_daily_excel(day)
+                        tables = parse_daily_report(excel, expected_day=day)
+                        for table, rows in tables.items():
+                            store.upsert(table, rows, fetched_at)
+                        gap = balance_gap_mwh(tables["saatlik_denge"])
+                        if gap is not None and gap > BALANCE_TOLERANCE_MWH:
+                            _say(f"UYARI {label}: saatlik enerji dengesi farkı {gap:.2f} MWh")
+                        summary += f" | {len(tables['saatlik_denge'])} saatlik denge satırı"
+                    synced.append(label)
+                    _say(f"{label}: {summary}")
+                except EnergyDataError as exc:
+                    failed[label] = f"{exc.code.value}: {exc.message}"
+                    _say(f"HATA {label}: {exc.message}", error=True)
+                except Exception as exc:  # beklenmeyen hata yalnız o günü düşürsün
+                    logger.info("%s beklenmeyen hata", label, exc_info=True)
+                    failed[label] = f"{type(exc).__name__}: {exc}"
+                    _say(f"HATA {label}: beklenmeyen {type(exc).__name__}: {exc}", error=True)
+                if i < len(days) - 1:
+                    time.sleep(args.bekleme)
+    finally:
+        store.record_sync(synced=synced, failed=failed, finished_at=datetime.now(ISTANBUL))
+        _say(f"Depo: {store.root} | başarılı {len(synced)}, hatalı {len(failed)}")
     pushed = _git_push(store.root, days) if args.git_push else True
     return 1 if failed or not pushed else 0
 

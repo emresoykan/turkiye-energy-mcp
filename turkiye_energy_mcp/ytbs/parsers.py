@@ -45,16 +45,34 @@ def source_code(text: Any) -> str:
     return slug(text).replace("_", "")
 
 
+_MISSING = {"", "-", "--", "—"}
+
+
 def _num(value: Any) -> float | None:
-    if value is None or value == "":
+    """Sayı hücresi. Boş ve "-" eksik (None) sayılır. Metin hücrelerde Türkçe biçim
+    ("1.234,5") desteklenir: virgül varsa ondalık ayracıdır ve noktalar binlik ayracıdır.
+    Virgülsüz tek nokta ("12.5") ondalık kabul edilir; birden fazla nokta binliktir."""
+    if value is None:
         return None
     if isinstance(value, (int, float)):
         return float(value)
-    return float(str(value).replace(",", "."))
+    text = str(value).strip().replace("\xa0", "").replace(" ", "")
+    if text in _MISSING:
+        return None
+    if "," in text or text.count(".") > 1:
+        text = text.replace(".", "").replace(",", ".")
+    try:
+        return float(text)
+    except ValueError:
+        raise _parsing_error("YTBS raporunda sayı olmayan hücre.", value=str(value)) from None
 
 
-def _tr_date(text: Any) -> date:
-    return datetime.strptime(str(text).strip(), "%d.%m.%Y").date()
+def _tr_date(value: Any) -> date:
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    return datetime.strptime(str(value).strip(), "%d.%m.%Y").date()
 
 
 def _parsing_error(message: str, **details: Any) -> EnergyDataError:
@@ -134,6 +152,22 @@ def parse_day_series(text: str, day: date) -> list[dict[str, Any]]:
             },
         )
 
+    try:
+        return _series_rows(day, load, generation, sources)
+    except (ValueError, TypeError, KeyError, AttributeError) as exc:
+        raise _parsing_error(
+            "YTBS 15 dk verisi beklenen biçimde değil.",
+            day=day.isoformat(),
+            error=f"{type(exc).__name__}: {exc}",
+        ) from exc
+
+
+def _series_rows(
+    day: date,
+    load: list[dict[str, Any]],
+    generation: list[dict[str, Any]],
+    sources: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
     codes = [s["kod"] for s in sources]
     by_time = {g["zaman"]: g for g in generation}
     rows = []
@@ -160,11 +194,17 @@ def _rows(ws) -> list[list[Any]]:
 
 
 def _sheet(wb, title_fragment: str):
+    """Başlığı `title_fragment` içeren sayfa. Beklenen her sayfa zorunludur: bulunamaması
+    rapor yapısının değiştiği anlamına gelir ve sessizce boş tablo yazılmasın diye hata verir."""
     for ws in wb.worksheets:
         first = next(ws.iter_rows(min_row=1, max_row=1, values_only=True), ())
         if any(isinstance(v, str) and title_fragment in v for v in first):
             return ws
-    return None
+    raise _parsing_error(
+        f"YTBS günlük raporunda '{title_fragment}' sayfası bulunamadı; rapor yapısı değişmiş "
+        "olabilir.",
+        sheets=[ws.title for ws in wb.worksheets],
+    )
 
 
 def _table(ws, marker: str) -> tuple[list[Any], list[str], list[list[Any]]]:
@@ -187,7 +227,7 @@ def _hour_start(day: date, label: str) -> str:
 def report_date(wb) -> date:
     for row in _rows(wb.worksheets[0])[:3]:
         for value in row:
-            if isinstance(value, str):
+            if isinstance(value, (str, date)):
                 try:
                     return _tr_date(value)
                 except ValueError:
@@ -197,8 +237,6 @@ def report_date(wb) -> date:
 
 def _hourly_balance(wb, day: date) -> list[dict[str, Any]]:
     ws = _sheet(wb, "TÜKETİMİNİN SAATLİK GELİŞİMİ")
-    if ws is None:
-        return []
     _, headers, data = _table(ws, "SAAT")
     out = []
     for r in data:
@@ -218,8 +256,6 @@ def _hourly_balance(wb, day: date) -> list[dict[str, Any]]:
 
 def _owner_source_matrix(wb, day: date, title: str, value_name: str) -> list[dict[str, Any]]:
     ws = _sheet(wb, title)
-    if ws is None:
-        return []
     _, headers, data = _table(ws, "KURULUŞ")
     out = []
     for r in data:
@@ -238,8 +274,6 @@ def _owner_source_matrix(wb, day: date, title: str, value_name: str) -> list[dic
 
 def _available_capacity(wb, day: date) -> list[dict[str, Any]]:
     ws = _sheet(wb, "EMRE AMADE KAPASİTE")
-    if ws is None:
-        return []
     raw, _, data = _table(ws, "KAYNAK ADI")
     hours = [(i, h) for i, h in enumerate(raw) if isinstance(h, str) and ":" in h]
     out = []
@@ -263,8 +297,6 @@ def _available_capacity(wb, day: date) -> list[dict[str, Any]]:
 
 def _daily_split(wb, day: date, title: str, key: str) -> list[dict[str, Any]]:
     ws = _sheet(wb, title)
-    if ws is None:
-        return []
     _, _, data = _table(ws, "AD")
     out = []
     for r in data:
@@ -278,8 +310,6 @@ def _daily_split(wb, day: date, title: str, key: str) -> list[dict[str, Any]]:
 
 def _peaks(wb, day: date) -> list[dict[str, Any]]:
     ws = _sheet(wb, "GÜNLÜK TÜRKİYE PUANT RAPORU")
-    if ws is None:
-        return []
     _, _, data = _table(ws, "ULUSAL PUANT")
     out = []
     for r in data:
@@ -302,8 +332,6 @@ def _peaks(wb, day: date) -> list[dict[str, Any]]:
 
 def _regional_peaks(wb, day: date) -> list[dict[str, Any]]:
     ws = _sheet(wb, "BÖLGESEL PUANT RAPORU")
-    if ws is None:
-        return []
     _, _, data = _table(ws, "BÖLGE ADI")
     out = []
     for r in data:
@@ -324,8 +352,6 @@ def _regional_peaks(wb, day: date) -> list[dict[str, Any]]:
 def _water(wb, day: date) -> list[dict[str, Any]]:
     """Aylık su durumu (bin m³). Değerlerin dönemi (günlük/kümülatif) doğrulanmadı."""
     ws = _sheet(wb, "SU DURUMU")
-    if ws is None:
-        return []
     _, headers, data = _table(ws, "GÜN")
     out = []
     for r in data:
@@ -368,6 +394,25 @@ def parse_daily_report(content: bytes, expected_day: date | None = None) -> dict
             source=SOURCE,
             details={"requested": expected_day.isoformat(), "returned": day.isoformat()},
         )
+    try:
+        tables = _parse_tables(wb, day)
+    except (ValueError, TypeError, KeyError, IndexError) as exc:
+        raise _parsing_error(
+            "YTBS günlük raporu ayrıştırılamadı; hücre biçimi beklenmiyor.",
+            day=day.isoformat(),
+            error=f"{type(exc).__name__}: {exc}",
+        ) from exc
+    empty = [name for name, rows in tables.items() if not rows]
+    if empty:
+        raise _parsing_error(
+            "YTBS günlük raporunda tablo(lar) boş çıktı; rapor yapısı değişmiş olabilir.",
+            day=day.isoformat(),
+            tables=empty,
+        )
+    return tables
+
+
+def _parse_tables(wb, day: date) -> dict[str, list[dict]]:
     return {
         "saatlik_denge": _hourly_balance(wb, day),
         "kurulu_guc": _owner_source_matrix(
