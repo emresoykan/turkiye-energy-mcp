@@ -13,7 +13,7 @@ from .config import get_settings
 from .exceptions import EnergyDataError, ErrorCode
 from .http_client import ResilientHTTPClient
 from .logging import configure_logging
-from .oauth_compat import PublicOAuthCompat
+from .oauth_compat import PublicOAuthCompat, parse_redirect_hosts
 from .service import EnergyService
 from .ytbs.repository import YtbsRepository
 from .ytbs.service import YtbsService
@@ -29,7 +29,11 @@ service = EnergyService(teias_client)
 ytbs = YtbsService(YtbsRepository(settings, http, cache))
 oauth: PublicOAuthCompat | None = None
 if settings.public_base_url:
-    oauth = PublicOAuthCompat(settings.public_base_url, settings.mcp_path)
+    oauth = PublicOAuthCompat(
+        settings.public_base_url,
+        settings.mcp_path,
+        allowed_redirect_hosts=parse_redirect_hosts(settings.oauth_allowed_redirect_hosts),
+    )
 
 
 @asynccontextmanager

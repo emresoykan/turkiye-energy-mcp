@@ -13,8 +13,9 @@ import hashlib
 import secrets
 import time
 from dataclasses import dataclass, field
+from collections.abc import Iterable
 from typing import Any
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
@@ -62,6 +63,38 @@ def _b64url(raw: bytes) -> str:
     return base64.urlsafe_b64encode(raw).rstrip(b"=").decode("ascii")
 
 
+# Redirect hosts accepted for clients that did not register via /register (claude.ai uses
+# preconfigured / CIMD client ids). HTTPS only, exact host match.
+DEFAULT_ALLOWED_REDIRECT_HOSTS = ("claude.ai", "claude.com")
+# Loopback callbacks (Claude Code, MCP inspector, local dev) on any port, http or https.
+_LOOPBACK_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
+
+
+def parse_redirect_hosts(raw: str | None) -> tuple[str, ...]:
+    """Parse comma-separated `OAUTH_ALLOWED_REDIRECT_HOSTS`; empty means the defaults."""
+    if not raw or not raw.strip():
+        return DEFAULT_ALLOWED_REDIRECT_HOSTS
+    return tuple(host.strip().lower() for host in raw.split(",") if host.strip())
+
+
+def _redirect_host_allowed(uri: str, allowed_hosts: Iterable[str]) -> bool:
+    # Backslashes/whitespace are rejected outright: browsers treat `\` as `/`, so
+    # `https://evil.test\@claude.ai` would parse as claude.ai here but open evil.test.
+    if any(ch == "\\" or ch.isspace() or ord(ch) < 0x20 for ch in uri):
+        return False
+    try:
+        parts = urlsplit(uri)
+        host = (parts.hostname or "").lower()
+        parts.port  # noqa: B018 - raises ValueError on a malformed port
+    except ValueError:
+        return False
+    if parts.fragment or not host:
+        return False
+    if host in _LOOPBACK_HOSTS:
+        return parts.scheme in ("http", "https")
+    return parts.scheme == "https" and host in allowed_hosts
+
+
 def verify_pkce(code_verifier: str, challenge: str, method: str) -> bool:
     if method != "S256":
         return False
@@ -70,8 +103,15 @@ def verify_pkce(code_verifier: str, challenge: str, method: str) -> bool:
 
 
 class PublicOAuthCompat:
-    def __init__(self, public_base_url: str, mcp_path: str = "/mcp") -> None:
+    def __init__(
+        self,
+        public_base_url: str,
+        mcp_path: str = "/mcp",
+        *,
+        allowed_redirect_hosts: Iterable[str] = DEFAULT_ALLOWED_REDIRECT_HOSTS,
+    ) -> None:
         self.public_base_url = public_base_url.rstrip("/")
+        self.allowed_redirect_hosts = frozenset(h.lower() for h in allowed_redirect_hosts)
         self.mcp_path = mcp_path if mcp_path.startswith("/") else f"/{mcp_path}"
         self.resource = f"{self.public_base_url}{self.mcp_path}"
         self.store = PublicOAuthStore()
@@ -144,13 +184,19 @@ class PublicOAuthCompat:
         if not client_id or not redirect_uri or not code_challenge:
             return JSONResponse({"error": "invalid_request"}, status_code=400)
 
+        # Never redirect to an unvetted URI (open redirect): registered clients get exact
+        # matches against their DCR redirect_uris; first-seen clients (CIMD / preconfigured
+        # ids, or DCR clients forgotten after a restart) only the host allowlist.
         client = self.store.clients.get(client_id)
-        if client is None:
-            # Accept first-seen public clients (CIMD / preconfigured IDs).
-            client = _Client(client_id=client_id, redirect_uris=[redirect_uri])
-            self.store.clients[client_id] = client
-        if redirect_uri not in client.redirect_uris:
-            client.redirect_uris.append(redirect_uri)
+        if client is not None:
+            allowed = redirect_uri in client.redirect_uris
+        else:
+            allowed = _redirect_host_allowed(redirect_uri, self.allowed_redirect_hosts)
+        if not allowed:
+            return JSONResponse(
+                {"error": "invalid_request", "error_description": "redirect_uri not allowed"},
+                status_code=400,
+            )
 
         code = secrets.token_urlsafe(24)
         self.store.codes[code] = _AuthCode(
