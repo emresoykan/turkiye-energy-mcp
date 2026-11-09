@@ -2,18 +2,25 @@
 
 The MCP tools themselves remain authless. Claude.ai's connector UI often
 attempts Dynamic Client Registration even for public servers; these routes
-complete that handshake with auto-approved codes and opaque bearer tokens
-so the connector can reach `/mcp`.
+complete that handshake with auto-approved codes and bearer tokens so the
+connector can reach `/mcp`.
+
+Tokens are stateless and HMAC-signed (type + client + expiry), so with a fixed
+`OAUTH_SIGNING_KEY` they survive restarts; only short-lived authorization
+codes, DCR clients and used refresh-token ids live in bounded memory.
 """
 
 from __future__ import annotations
 
 import base64
 import hashlib
+import hmac
+import json
+import logging
 import secrets
 import time
-from dataclasses import dataclass, field
 from collections.abc import Iterable
+from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urlencode, urlsplit
 
@@ -38,29 +45,108 @@ class _AuthCode:
     expires_at: float
 
 
-@dataclass
-class _Token:
-    access_token: str
-    client_id: str
-    expires_at: float
+logger = logging.getLogger(__name__)
+
+AUTH_CODE_TTL_SECONDS = 600
+ACCESS_TOKEN_TTL_SECONDS = 3600
+REFRESH_TOKEN_TTL_SECONDS = 30 * 86400
+MAX_CLIENTS = 1000
+MAX_CODES = 1000
+MAX_USED_REFRESH_IDS = 10_000
+MAX_REDIRECT_URIS = 10
+MAX_REDIRECT_URI_LENGTH = 2048
+
+
+def _now() -> float:
+    return time.time()
+
+
+def _put_bounded(mapping: dict[str, Any], key: str, value: Any, cap: int) -> None:
+    """Insert and evict the oldest entries (dicts keep insertion order) beyond `cap`."""
+    mapping[key] = value
+    while len(mapping) > cap:
+        del mapping[next(iter(mapping))]
 
 
 @dataclass
 class PublicOAuthStore:
+    """Unauthenticated callers write here, so every collection is capped and pruned."""
+
     clients: dict[str, _Client] = field(default_factory=dict)
     codes: dict[str, _AuthCode] = field(default_factory=dict)
-    tokens: dict[str, _Token] = field(default_factory=dict)
+    # Rotated refresh tokens: jti -> expiry. A token past its expiry is rejected anyway.
+    used_refresh_ids: dict[str, float] = field(default_factory=dict)
+    max_clients: int = MAX_CLIENTS
+    max_codes: int = MAX_CODES
+    max_used_refresh_ids: int = MAX_USED_REFRESH_IDS
 
     def prune(self) -> None:
-        now = time.time()
+        now = _now()
         self.codes = {key: value for key, value in self.codes.items() if value.expires_at > now}
-        self.tokens = {
-            key: value for key, value in self.tokens.items() if value.expires_at > now
+        self.used_refresh_ids = {
+            key: exp for key, exp in self.used_refresh_ids.items() if exp > now
         }
+
+    def add_client(self, client: _Client) -> None:
+        _put_bounded(self.clients, client.client_id, client, self.max_clients)
+
+    def add_code(self, code: _AuthCode) -> None:
+        _put_bounded(self.codes, code.code, code, self.max_codes)
+
+    def mark_refresh_used(self, jti: str, expires_at: float) -> None:
+        _put_bounded(self.used_refresh_ids, jti, expires_at, self.max_used_refresh_ids)
 
 
 def _b64url(raw: bytes) -> str:
     return base64.urlsafe_b64encode(raw).rstrip(b"=").decode("ascii")
+
+
+def _b64url_decode(text: str) -> bytes:
+    return base64.urlsafe_b64decode(text + "=" * (-len(text) % 4))
+
+
+class TokenSigner:
+    """Stateless `v1.<payload>.<hmac-sha256>` tokens carrying type, client, expiry, id."""
+
+    _PREFIX = "v1"
+
+    def __init__(self, key: bytes) -> None:
+        self._key = key
+
+    def _sign(self, signing_input: str) -> str:
+        return _b64url(hmac.new(self._key, signing_input.encode("ascii"), "sha256").digest())
+
+    def issue(self, token_type: str, client_id: str, ttl_seconds: int) -> str:
+        claims = {
+            "typ": token_type,
+            "cid": client_id,
+            "exp": int(_now()) + ttl_seconds,
+            "jti": secrets.token_urlsafe(16),
+        }
+        payload = _b64url(json.dumps(claims, separators=(",", ":")).encode("utf-8"))
+        signing_input = f"{self._PREFIX}.{payload}"
+        return f"{signing_input}.{self._sign(signing_input)}"
+
+    def verify(self, token: str, token_type: str) -> dict[str, Any] | None:
+        """Return the claims of a valid, unexpired token of `token_type`, else None."""
+        parts = token.split(".")
+        if len(parts) != 3 or parts[0] != self._PREFIX:
+            return None
+        try:
+            signing_input = f"{parts[0]}.{parts[1]}"
+            if not hmac.compare_digest(self._sign(signing_input), parts[2]):
+                return None
+            claims = json.loads(_b64url_decode(parts[1]))
+        except (ValueError, TypeError):  # bad base64/JSON, non-ASCII signature
+            return None
+        if not isinstance(claims, dict) or claims.get("typ") != token_type:
+            return None
+        exp = claims.get("exp")
+        if not isinstance(exp, int) or exp <= _now():
+            return None
+        if not isinstance(claims.get("cid"), str) or not isinstance(claims.get("jti"), str):
+            return None
+        return claims
 
 
 # Redirect hosts accepted for clients that did not register via /register (claude.ai uses
@@ -109,12 +195,24 @@ class PublicOAuthCompat:
         mcp_path: str = "/mcp",
         *,
         allowed_redirect_hosts: Iterable[str] = DEFAULT_ALLOWED_REDIRECT_HOSTS,
+        signing_key: str | None = None,
     ) -> None:
         self.public_base_url = public_base_url.rstrip("/")
         self.allowed_redirect_hosts = frozenset(h.lower() for h in allowed_redirect_hosts)
         self.mcp_path = mcp_path if mcp_path.startswith("/") else f"/{mcp_path}"
         self.resource = f"{self.public_base_url}{self.mcp_path}"
         self.store = PublicOAuthStore()
+        if signing_key:
+            if len(signing_key) < 32:
+                logger.warning("OAUTH_SIGNING_KEY is shorter than 32 characters.")
+            key = signing_key.encode("utf-8")
+        else:
+            logger.warning(
+                "OAUTH_SIGNING_KEY is not set: using a random per-process key, so OAuth "
+                "tokens will not survive restarts/redeploys (connectors must re-authorize)."
+            )
+            key = secrets.token_bytes(32)
+        self.signer = TokenSigner(key)
 
     def authorization_server_metadata(self) -> dict[str, Any]:
         return {
@@ -142,24 +240,41 @@ class PublicOAuthCompat:
         }
 
     async def register(self, request: Request) -> Response:
-        payload = await request.json()
-        redirect_uris = payload.get("redirect_uris") or []
-        if not isinstance(redirect_uris, list) or not redirect_uris:
+        try:
+            payload = await request.json()
+        except ValueError:
+            payload = None
+        redirect_uris = payload.get("redirect_uris") if isinstance(payload, dict) else None
+        if (
+            not isinstance(redirect_uris, list)
+            or not 0 < len(redirect_uris) <= MAX_REDIRECT_URIS
+            or not all(
+                isinstance(uri, str) and 0 < len(uri) <= MAX_REDIRECT_URI_LENGTH
+                for uri in redirect_uris
+            )
+        ):
             return JSONResponse(
-                {"error": "invalid_client_metadata", "error_description": "redirect_uris required"},
+                {
+                    "error": "invalid_client_metadata",
+                    "error_description": (
+                        f"redirect_uris: 1-{MAX_REDIRECT_URIS} strings of at most "
+                        f"{MAX_REDIRECT_URI_LENGTH} characters required"
+                    ),
+                },
                 status_code=400,
             )
+        self.store.prune()
         client_id = f"public-{secrets.token_urlsafe(16)}"
         client = _Client(
             client_id=client_id,
-            redirect_uris=[str(uri) for uri in redirect_uris],
-            client_name=str(payload.get("client_name") or "claude-connector"),
+            redirect_uris=list(redirect_uris),
+            client_name=str(payload.get("client_name") or "claude-connector")[:200],
         )
-        self.store.clients[client_id] = client
+        self.store.add_client(client)
         return JSONResponse(
             {
                 "client_id": client_id,
-                "client_id_issued_at": int(time.time()),
+                "client_id_issued_at": int(_now()),
                 "client_secret_expires_at": 0,
                 "redirect_uris": client.redirect_uris,
                 "grant_types": ["authorization_code", "refresh_token"],
@@ -198,14 +313,17 @@ class PublicOAuthCompat:
                 status_code=400,
             )
 
+        self.store.prune()
         code = secrets.token_urlsafe(24)
-        self.store.codes[code] = _AuthCode(
-            code=code,
-            client_id=client_id,
-            redirect_uri=redirect_uri,
-            code_challenge=code_challenge,
-            code_challenge_method=code_challenge_method,
-            expires_at=time.time() + 600,
+        self.store.add_code(
+            _AuthCode(
+                code=code,
+                client_id=client_id,
+                redirect_uri=redirect_uri,
+                code_challenge=code_challenge,
+                code_challenge_method=code_challenge_method,
+                expires_at=_now() + AUTH_CODE_TTL_SECONDS,
+            )
         )
         query = {"code": code}
         if state:
@@ -223,7 +341,7 @@ class PublicOAuthCompat:
             redirect_uri = str(form.get("redirect_uri") or "")
             code_verifier = str(form.get("code_verifier") or "")
             auth_code = self.store.codes.pop(code, None)
-            if auth_code is None or auth_code.expires_at < time.time():
+            if auth_code is None or auth_code.expires_at < _now():
                 return JSONResponse({"error": "invalid_grant"}, status_code=400)
             if auth_code.client_id != client_id or auth_code.redirect_uri != redirect_uri:
                 return JSONResponse({"error": "invalid_grant"}, status_code=400)
@@ -232,32 +350,35 @@ class PublicOAuthCompat:
             ):
                 return JSONResponse({"error": "invalid_grant"}, status_code=400)
         elif grant_type == "refresh_token":
-            refresh = str(form.get("refresh_token") or "")
-            token = self.store.tokens.get(refresh)
-            if token is None or token.expires_at < time.time() or token.client_id != client_id:
+            # verify() checks signature, expiry and type, so an access token is not a
+            # refresh token. Refresh tokens rotate: each one is accepted once.
+            claims = self.signer.verify(str(form.get("refresh_token") or ""), "refresh")
+            if (
+                claims is None
+                or claims["cid"] != client_id
+                or claims["jti"] in self.store.used_refresh_ids
+            ):
                 return JSONResponse({"error": "invalid_grant"}, status_code=400)
+            self.store.mark_refresh_used(claims["jti"], claims["exp"])
         else:
             return JSONResponse({"error": "unsupported_grant_type"}, status_code=400)
 
-        access_token = secrets.token_urlsafe(32)
-        refresh_token = secrets.token_urlsafe(32)
-        expires_in = 3600
-        expires_at = time.time() + expires_in
-        self.store.tokens[access_token] = _Token(
-            access_token=access_token, client_id=client_id, expires_at=expires_at
-        )
-        self.store.tokens[refresh_token] = _Token(
-            access_token=refresh_token, client_id=client_id, expires_at=expires_at + 86400
-        )
         return JSONResponse(
             {
-                "access_token": access_token,
+                "access_token": self.signer.issue(
+                    "access", client_id, ACCESS_TOKEN_TTL_SECONDS
+                ),
                 "token_type": "bearer",
-                "expires_in": expires_in,
-                "refresh_token": refresh_token,
+                "expires_in": ACCESS_TOKEN_TTL_SECONDS,
+                "refresh_token": self.signer.issue(
+                    "refresh", client_id, REFRESH_TOKEN_TTL_SECONDS
+                ),
                 "scope": "mcp",
             }
         )
+
+    def verify_access_token(self, token: str) -> dict[str, Any] | None:
+        return self.signer.verify(token, "access")
 
     async def jwks(self, _: Request) -> Response:
         return JSONResponse({"keys": []})

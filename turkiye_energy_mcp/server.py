@@ -33,6 +33,9 @@ if settings.public_base_url:
         settings.public_base_url,
         settings.mcp_path,
         allowed_redirect_hosts=parse_redirect_hosts(settings.oauth_allowed_redirect_hosts),
+        signing_key=(
+            settings.oauth_signing_key.get_secret_value() if settings.oauth_signing_key else None
+        ),
     )
 
 

@@ -44,6 +44,9 @@ class Settings(BaseSettings):
     # Comma-separated hosts /authorize may redirect first-seen (non-DCR) clients to, HTTPS
     # only. Empty = claude.ai, claude.com. localhost / 127.0.0.1 are always allowed.
     oauth_allowed_redirect_hosts: str | None = None
+    # HMAC key for stateless OAuth tokens (e.g. `openssl rand -hex 32`). Unset = random
+    # per-process key: tokens stop working after every restart/redeploy.
+    oauth_signing_key: SecretStr | None = None
 
 
 @lru_cache(maxsize=1)

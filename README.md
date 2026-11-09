@@ -131,6 +131,8 @@ MCP_TRANSPORT=stdio turkiye-energy-mcp
 | `TEIAS_BASE_URL` | resmî TEİAŞ URL | JSON katalog kökü |
 | `TEIAS_FILE_BASE_URL` | resmî TEİAŞ dosya URL | Dosya indirme kökü |
 | `PUBLIC_BASE_URL` | boş | Claude connector OAuth discovery origin'i (ör. Railway domain) |
+| `OAUTH_SIGNING_KEY` | boş | OAuth token'larını imzalayan HMAC anahtarı (`openssl rand -hex 32`). Boşsa her süreçte rastgele anahtar üretilir ve her deploy/restart sonrası connector yeniden yetkilendirme ister |
+| `OAUTH_ALLOWED_REDIRECT_HOSTS` | `claude.ai,claude.com` | DCR ile kayıt olmamış istemciler için `/authorize`'ın yönlendirebileceği HTTPS host'ları (virgülle ayrılmış, tam eşleşme). `localhost`/`127.0.0.1` her zaman serbesttir |
 | `YTBS_DATA_DIR` | boş | `ytbs-sync` CSV deposunun yerel klasörü (verilirse öncelikli) |
 | `YTBS_DATA_REPO` | boş | CSV deposunun GitHub reposu, `owner/repo` (Railway için) |
 | `YTBS_DATA_REF` | `main` | Veri reposunun dalı |
