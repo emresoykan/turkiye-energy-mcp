@@ -302,23 +302,34 @@ def parse_generation_mix(content: bytes) -> list[dict[str, Any]]:
     return records
 
 
+_PEAK_DEMAND_COLUMNS: dict[int, tuple[str, tuple[str, ...]]] = {
+    2: ("installed_capacity_mw", ("kurulu guc", "installed cap")),
+    3: ("instantaneous_peak_mw", ("ani", "instantaneous")),
+    4: ("hourly_peak_mw", ("saatlik", "hourly")),
+    5: ("gross_demand_gwh", ("brut talep", "gross demand")),
+    6: ("average_generation_capacity_gwh", ("ortalama", "average")),
+    7: ("firm_generation_capacity_gwh", ("guvenilir", "firm")),
+}
+
+
 def parse_peak_demand(content: bytes) -> list[dict[str, Any]]:
     df = _frame(content)
+    table = "kurulu güç / puant / üretim kapasitesi"
+    header_row, _ = _find_label(df, table, "YILLAR", lambda text: text == "yillar", column=1)
+    _check_column_headers(
+        df,
+        table,
+        header_row,
+        {index: tokens for index, (_, tokens) in _PEAK_DEMAND_COLUMNS.items()},
+    )
     records: list[dict[str, Any]] = []
-    for _, row in df.iterrows():
+    for _, row in df.iloc[header_row + 1 :].iterrows():
         if len(row) <= 7 or not _is_year(row.iloc[1], 1900, 2100):
             continue
-        records.append(
-            {
-                "year": int(float(row.iloc[1])),
-                "installed_capacity_mw": number(row.iloc[2]),
-                "instantaneous_peak_mw": number(row.iloc[3]),
-                "hourly_peak_mw": number(row.iloc[4]),
-                "gross_demand_gwh": number(row.iloc[5]),
-                "average_generation_capacity_gwh": number(row.iloc[6]),
-                "firm_generation_capacity_gwh": number(row.iloc[7]),
-            }
-        )
+        record: dict[str, Any] = {"year": int(float(row.iloc[1]))}
+        for index, (field, _) in _PEAK_DEMAND_COLUMNS.items():
+            record[field] = number(row.iloc[index])
+        records.append(record)
     return records
 
 

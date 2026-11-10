@@ -1,4 +1,5 @@
 from io import BytesIO
+import json
 from pathlib import Path
 import warnings
 
@@ -6,6 +7,7 @@ import pandas as pd
 import pytest
 
 from turkiye_energy_mcp.exceptions import EnergyDataError, ErrorCode
+from turkiye_energy_mcp.parsers import workbooks
 from turkiye_energy_mcp.parsers.workbooks import (
     parse_capacity_by_organization,
     parse_capacity_mix,
@@ -34,6 +36,7 @@ CAPACITY_BY_ORG = "kurulu_guc_kurulus_2006-2025.xls"
 GENERATION_MIX = "uretim_kaynak_2000-2025.xls"
 GENERATION_BY_ORG = "uretim_kurulus_2014-2025.xlsx"
 EUAS_BY_SOURCE = "uretim_kurulus_kaynak_2019-2025.xlsx"
+PEAK_DEMAND = "puant_kurulu_guc_1980-2025.xls"
 
 
 def fixture_bytes(name: str) -> bytes:
@@ -73,6 +76,21 @@ def assert_layout_error(parser, frame: pd.DataFrame) -> EnergyDataError:
     return excinfo.value
 
 
+# Output of the fixed-position parsers (before header checks were added) on the
+# real fixtures above; the checked parsers must return exactly the same records.
+LEGACY_OUTPUT = json.loads(
+    (TEIAS_FIXTURES / "legacy_parser_output.json").read_text(encoding="utf-8")
+)
+
+
+@pytest.mark.parametrize(
+    "entry", LEGACY_OUTPUT, ids=lambda entry: f"{entry['parser']}-{entry['fixture']}"
+)
+def test_real_workbooks_match_fixed_position_output(entry):
+    parser = getattr(workbooks, entry["parser"])
+    assert parser(fixture_bytes(entry["fixture"]), *entry["args"]) == entry["records"]
+
+
 def test_teias_capacity_parser():
     records = parse_capacity_mix(fixture_bytes(CAPACITY_MIX))
     assert {"year": 2006, "source": "hard_coal", "capacity_mw": 1986.0} in records
@@ -87,6 +105,7 @@ def test_teias_capacity_parser():
         (parse_generation_mix, GENERATION_MIX),
         (parse_generation_by_organization, GENERATION_BY_ORG),
         (parse_euas_generation_by_source, EUAS_BY_SOURCE),
+        (parse_peak_demand, PEAK_DEMAND),
     ],
 )
 def test_real_workbooks_round_trip_through_test_writer(parser, name):
@@ -221,11 +240,49 @@ def test_euas_monthly_parser_handles_blank_merged_cells():
 
 
 def test_peak_parser_and_empty_dataset():
-    frame = pd.DataFrame([[None] * 8 for _ in range(15)])
-    frame.iloc[14] = [None, 2024, 116265.1, 58709.76, 57772.4, 353579.8, 550571.8, 478190.6]
-    records = parse_peak_demand(workbook_bytes(frame))
-    assert records[0]["instantaneous_peak_mw"] == 58709.76
-    assert parse_peak_demand(workbook_bytes(pd.DataFrame([[None] * 8]))) == []
+    records = {row["year"]: row for row in parse_peak_demand(fixture_bytes(PEAK_DEMAND))}
+    assert sorted(records) == list(range(1980, 2026))
+    # MW power and GWh energy columns stay separate.
+    assert records[2025] == {
+        "year": 2025,
+        "installed_capacity_mw": 123302.990857,
+        "instantaneous_peak_mw": 60405.61,
+        "hourly_peak_mw": 59503.67,
+        "gross_demand_gwh": 366920.321254,
+        "average_generation_capacity_gwh": 567530.3792,
+        "firm_generation_capacity_gwh": 486688.2452,
+    }
+    # Header present but no year rows yet: empty, not an error.
+    frame = fixture_frame(PEAK_DEMAND)
+    header_only = frame.iloc[:14]
+    assert parse_peak_demand(workbook_bytes(header_only)) == []
+
+
+def test_peak_parser_without_header_raises():
+    error = assert_layout_error(parse_peak_demand, pd.DataFrame([[None] * 8]))
+    assert error.details["expected_label"] == "YILLAR"
+
+
+@pytest.mark.parametrize("column", [0, 3, 5, 7])
+def test_peak_parser_inserted_column_raises(column):
+    # 0: whole table shifted; 3: between installed MW and instantaneous peak;
+    # 5: between hourly peak MW and gross demand GWh; 7: before firm capacity.
+    assert_layout_error(parse_peak_demand, insert_column(fixture_frame(PEAK_DEMAND), column))
+
+
+@pytest.mark.parametrize("row", [5, 13, 30])
+def test_peak_parser_inserted_row_keeps_values(row):
+    expected = parse_peak_demand(fixture_bytes(PEAK_DEMAND))
+    shifted = insert_row(fixture_frame(PEAK_DEMAND), row)
+    assert_same_records(parse_peak_demand(workbook_bytes(shifted)), expected)
+
+
+def test_peak_parser_relabelled_column_raises():
+    frame = fixture_frame(PEAK_DEMAND)
+    frame.iloc[10, 3] = "SAATLİK"  # instantaneous-peak column now says hourly
+    frame.iloc[11, 3] = "HOURLY"
+    error = assert_layout_error(parse_peak_demand, frame)
+    assert error.details["column"] == 3
 
 
 def test_euas_thermal_parser():
