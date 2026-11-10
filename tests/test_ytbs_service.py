@@ -46,6 +46,8 @@ async def test_installed_capacity_snapshot_by_source(data_dir):
     assert wind["santral_sayisi"] == 420
     assert sum(r["kurulu_guc_mw"] for r in result["data"]) == pytest.approx(127241.2, abs=0.01)
     assert result["metadata"]["provisional"] is True
+    assert result["metadata"]["data_freshness"] == "provisional"
+    assert result["metadata"]["last_synced_at"] == FETCHED.isoformat(timespec="seconds")
 
 
 async def test_hourly_balance_reports_missing_days(data_dir):
@@ -55,6 +57,7 @@ async def test_hourly_balance_reports_missing_days(data_dir):
     assert len(result["data"]) == 24
     assert result["data"][0]["tuketim_mwh"] == pytest.approx(36320.76)
     assert result["metadata"]["missing_days"] == ["2026-10-02"]
+    assert result["metadata"]["data_freshness"] == "partial"
 
 
 async def test_15min_source_filter_accepts_turkish_and_english_names(data_dir):
@@ -123,3 +126,53 @@ async def test_sync_status_reports_last_full_day_and_partial_days(data_dir):
     assert status["son_tam_gun"] == "2026-10-01"
     assert status["kismi_gunler"] == ["2026-10-18"]
     assert "kayan pencere değildir" in status["depo_davranisi"]
+
+
+async def test_unknown_source_names_are_rejected_not_dropped(data_dir):
+    svc = make_service(ytbs_data_dir=str(data_dir))
+    with pytest.raises(EnergyDataError) as exc:
+        await svc.get_load_generation_15min("2026-10-18", "2026-10-18", ["rüzgar", "hydro"])
+    assert exc.value.code == ErrorCode.INVALID_PARAMETER
+    assert exc.value.details["unknown"] == ["hydro"]
+    assert {"barajli", "akarsu", "ruzgar"} <= set(exc.value.details["valid"])
+    assert exc.value.details["english_aliases"]["wind"] == "ruzgar"
+    assert "barajli" in exc.value.message
+
+    with pytest.raises(EnergyDataError) as exc:
+        await svc.get_daily_generation("2026-10-01", "2026-10-01", "kaynak", "hydro")
+    assert exc.value.code == ErrorCode.INVALID_PARAMETER
+
+    with pytest.raises(EnergyDataError) as exc:
+        await svc.get_available_capacity("2026-10-01", "2026-10-01", ["toplam", "bogus"])
+    assert exc.value.code == ErrorCode.INVALID_PARAMETER
+    assert exc.value.details["unknown"] == ["bogus"]
+
+
+async def test_known_source_names_still_filter(data_dir):
+    svc = make_service(ytbs_data_dir=str(data_dir))
+    daily = await svc.get_daily_generation("2026-10-01", "2026-10-01", "kaynak", "Rüzgâr")
+    assert [r["kaynak"] for r in daily["data"]] == ["ruzgar"]
+    capacity = await svc.get_available_capacity(
+        "2026-10-01", "2026-10-01", ["wind", "taleptahmin"]
+    )
+    assert {r["kalem"] for r in capacity["data"]} == {"ruzgar", "taleptahmin"}
+    # A valid code with no rows in the period is "no data", not an invalid name.
+    with pytest.raises(EnergyDataError) as exc:
+        await svc.get_daily_generation("2026-10-01", "2026-10-01", "kaynak", "nükleer")
+    assert exc.value.code == ErrorCode.DATA_NOT_AVAILABLE
+
+
+async def test_15min_zaman_marks_interval_end(data_dir):
+    result = await make_service(ytbs_data_dir=str(data_dir)).get_load_generation_15min(
+        "2026-10-18", "2026-10-18"
+    )
+    rows = result["data"]
+    assert len(rows) == 96
+    assert (rows[0]["tarih"], rows[0]["zaman"]) == ("2026-10-18", "2026-10-18 00:15")
+    assert (rows[-1]["tarih"], rows[-1]["zaman"]) == ("2026-10-18", "2026-10-19 00:00")
+    assert "BİTİŞİNİ" in result["metadata"]["notes"]
+    hourly = await make_service(ytbs_data_dir=str(data_dir)).get_hourly_balance(
+        "2026-10-01", "2026-10-01"
+    )
+    first = hourly["data"][0]
+    assert (first["saat"], first["zaman_baslangic"]) == ("01:00", "2026-10-01 00:00")

@@ -7,13 +7,14 @@ from mcp.types import ToolAnnotations
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+from .api_key import ApiKeyMiddleware
 from .cache import AsyncTTLCache
 from .clients.teias import TeiasClient
 from .config import get_settings
 from .exceptions import EnergyDataError, ErrorCode
 from .http_client import ResilientHTTPClient
 from .logging import configure_logging
-from .oauth_compat import PublicOAuthCompat
+from .oauth_compat import PublicOAuthCompat, parse_redirect_hosts
 from .service import EnergyService
 from .ytbs.repository import YtbsRepository
 from .ytbs.service import YtbsService
@@ -29,7 +30,14 @@ service = EnergyService(teias_client)
 ytbs = YtbsService(YtbsRepository(settings, http, cache))
 oauth: PublicOAuthCompat | None = None
 if settings.public_base_url:
-    oauth = PublicOAuthCompat(settings.public_base_url, settings.mcp_path)
+    oauth = PublicOAuthCompat(
+        settings.public_base_url,
+        settings.mcp_path,
+        allowed_redirect_hosts=parse_redirect_hosts(settings.oauth_allowed_redirect_hosts),
+        signing_key=(
+            settings.oauth_signing_key.get_secret_value() if settings.oauth_signing_key else None
+        ),
+    )
 
 
 @asynccontextmanager
@@ -133,7 +141,12 @@ async def teias_get_generation(
     end_year: int,
     source: str | None = None,
 ) -> dict[str, Any]:
-    """Türkiye yıllık brüt elektrik üretimini kaynak bazında GWh olarak getirir."""
+    """Türkiye yıllık brüt elektrik üretimini kaynak bazında GWh olarak getirir.
+
+    TEİAŞ bu tabloda rüzgâr ile jeotermali (geothermal_and_wind) ve taş kömürü ile asfaltiti
+    (hard_coal_and_asphaltite) birleşik raporlar; bu kaynaklardan biri sorulursa birleşik seri
+    döner ve metadata.warnings değerin saf kaynak olmadığını belirtir.
+    """
     return await _safe(service.get_generation(start_year, end_year, source))
 
 
@@ -267,8 +280,11 @@ async def ytbs_get_load_generation_15min(
 ) -> dict[str, Any]:
     """TEİAŞ YTBS 15 dakikalık anlık yük (MW) ve 18 kaynağa göre üretim (MW); lisanssız dahil.
 
-    En fazla 7 gün. sources örnekleri: rüzgar, güneş, doğalgaz, barajlı, ithal kömür.
+    En fazla 7 gün. sources örnekleri: rüzgar, güneş, doğalgaz, barajlı, ithal kömür;
+    bilinmeyen ad (ör. "hydro") geçerli adları listeleyen INVALID_PARAMETER döndürür.
     yuk_mw anlık talep değeridir; enerji (MWh) için ytbs_get_hourly_balance kullanın.
+    zaman dilim SONUDUR: ilk nokta 00:15, son nokta ertesi gün 00:00 (önceki günün tarih'i
+    altında); saatlik tablolar ise dilim başlangıcını zaman_baslangic olarak verir.
     """
     return await _safe(ytbs.get_load_generation_15min(start_date, end_date, sources))
 
@@ -288,7 +304,8 @@ async def ytbs_get_daily_generation(
     source: str | None = None,
 ) -> dict[str, Any]:
     """Günlük üretim (MWh), breakdown='kaynak' veya 'kurulus' (EÜAŞ, lisanssız, serbest
-    üretim vb.). En fazla 366 gün; source yalnız kaynak kırılımında filtreler."""
+    üretim vb.). En fazla 366 gün; source yalnız kaynak kırılımında filtreler (bilinmeyen
+    kaynak adı INVALID_PARAMETER döndürür)."""
     return await _safe(ytbs.get_daily_generation(start_date, end_date, breakdown, source))
 
 
@@ -332,17 +349,49 @@ async def ytbs_get_sync_status() -> dict[str, Any]:
     return await _safe(ytbs.get_sync_status())
 
 
+# Exact paths reachable without X-API-Key when MCP_API_KEY is set: the platform health
+# check and the OAuth handshake (claude.ai sends no custom headers during discovery).
+OPEN_PATHS = (
+    "/",
+    "/health",
+    "/register",
+    "/authorize",
+    "/token",
+    "/.well-known/oauth-authorization-server",
+    "/.well-known/openid-configuration",
+    "/.well-known/oauth-protected-resource",
+    f"/.well-known/oauth-protected-resource{settings.mcp_path}",
+    "/.well-known/jwks.json",
+)
+
+
+def build_http_app() -> Any:
+    app = mcp.streamable_http_app(
+        streamable_http_path=settings.mcp_path,
+        stateless_http=True,
+        json_response=True,
+        host=settings.host,
+    )
+    api_key = settings.mcp_api_key.get_secret_value().strip() if settings.mcp_api_key else ""
+    if not api_key:
+        logger.warning("MCP_API_KEY is not set: %s is open to anyone with the URL.",
+                       settings.mcp_path)
+        return app
+    logger.info("X-API-Key required on everything except %s", ", ".join(OPEN_PATHS))
+    return ApiKeyMiddleware(app, api_key, OPEN_PATHS)
+
+
 def main() -> None:
     if settings.mcp_transport == "stdio":
         mcp.run(transport="stdio")
     else:
-        mcp.run(
-            transport="streamable-http",
+        import uvicorn
+
+        uvicorn.run(
+            build_http_app(),
             host=settings.host,
             port=settings.port,
-            streamable_http_path=settings.mcp_path,
-            stateless_http=True,
-            json_response=True,
+            log_level=settings.log_level.lower(),
         )
 
 

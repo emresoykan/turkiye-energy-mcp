@@ -6,10 +6,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY pyproject.toml README.md ./
+COPY pyproject.toml README.md constraints.txt ./
 COPY turkiye_energy_mcp ./turkiye_energy_mcp
 
-RUN pip install --upgrade pip && pip install .
+# constraints.txt pins the full runtime dependency tree for reproducible builds.
+RUN pip install --upgrade pip && pip install -c constraints.txt .
 
 ENV HOST=0.0.0.0 \
     PORT=8000 \

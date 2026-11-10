@@ -41,6 +41,15 @@ class Settings(BaseSettings):
     # Absolute public origin for Claude OAuth discovery (no trailing slash).
     # Example: https://turkiye-energy-mcp-production.up.railway.app
     public_base_url: str | None = None
+    # Comma-separated hosts /authorize may redirect first-seen (non-DCR) clients to, HTTPS
+    # only. Empty = claude.ai, claude.com. localhost / 127.0.0.1 are always allowed.
+    oauth_allowed_redirect_hosts: str | None = None
+    # HMAC key for stateless OAuth tokens (e.g. `openssl rand -hex 32`). Unset = random
+    # per-process key: tokens stop working after every restart/redeploy.
+    oauth_signing_key: SecretStr | None = None
+    # Optional shared secret: when set, the MCP transport requires a matching `X-API-Key`
+    # header (health and OAuth endpoints stay open). Unset = tools are public.
+    mcp_api_key: SecretStr | None = None
 
 
 @lru_cache(maxsize=1)

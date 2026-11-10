@@ -32,6 +32,11 @@ def workbook(name: str, content: bytes) -> Workbook:
 @pytest.mark.asyncio
 async def test_power_plant_response_reports_dropped_project_rows():
     thermal = pd.DataFrame([[None] * 21 for _ in range(13)])
+    # Captions as printed in the real EÜAŞ thermal / hydro tables.
+    thermal.iloc[6, [2, 3, 4, 5, 16, 17, 18]] = [
+        "SIRA NO", "SANTRALIN ADI", "YAKIT CİNSİ", "BULUNDUĞU İL",
+        "KURULU GÜÇ", "BRÜT ÜRETİM", "PROJE ÜRETİMİ",
+    ]
     thermal.iloc[11, 2] = 1
     thermal.iloc[11, 3] = "Soma A"
     thermal.iloc[11, 4] = "Linyit"
@@ -47,6 +52,7 @@ async def test_power_plant_response_reports_dropped_project_rows():
     thermal.iloc[12, 17] = 2834
     thermal.iloc[12, 18] = 9360
     hydro = pd.DataFrame([[None] * 21 for _ in range(13)])
+    hydro.iloc[7, 2] = "SIRA NO"
     hydro.iloc[7, 4] = "SANTRALIN ADI"
     hydro.iloc[7, 6] = "BULUNDUĞU İL"
     hydro.iloc[7, 17] = "KURULU GÜÇ"
@@ -107,3 +113,118 @@ async def test_power_plant_response_reports_dropped_project_rows():
             "project_vs_gross_ratio_exceeds_3x": 1,
         },
     }
+
+
+# English header captions as printed in the real TEİAŞ tables; the parsers verify
+# them before reading their fixed columns.
+_GENERATION_MIX_HEADERS = [
+    "HARD COAL +ASPHALTITE", "IMPORTED COAL", "LIGNITE", "TOTAL", "FUEL-OIL",
+    "DIESEL OIL", "LPG", "NAPHTHA", "TOTAL", "NATURAL GAS", "RENEW.+WASTES + WASTE HEAT",
+    "THERMAL", "HYDRO", "GEOTERMAL +WIND", "SOLAR", "GENERAL TOTAL",
+]
+_CAPACITY_MIX_HEADERS = [
+    "HARD COAL(*)", "LIGNITE", "LIQUID FUELS(****)", "NATURAL GAS",
+    "RENEW.+WASTES + WASTE HEAT", "TOTAL", "SOLID+LIQUID(**)", "LIQUID+N.GAS", "TOTAL",
+    "THERMAL", "HYDRO", "GEOTHERMAL(***)", "WIND", "SOLAR", "GENERAL TOTAL",
+]
+
+
+def _generation_mix_frame() -> pd.DataFrame:
+    # parse_generation_mix: yıl 1. sütunda, kaynaklar 2..17 (2 = taş kömürü+asfaltit,
+    # 15 = jeotermal+rüzgâr, 17 = toplam).
+    frame = pd.DataFrame([[None] * 18 for _ in range(2)])
+    frame.iloc[0, 1] = "YILLAR"
+    frame.iloc[0, 2:18] = _GENERATION_MIX_HEADERS
+    frame.iloc[1, 1] = 2024
+    for column in range(2, 18):
+        frame.iloc[1, column] = float(column)
+    frame.iloc[1, 2] = 1234.5
+    frame.iloc[1, 15] = 45678.9
+    return frame
+
+
+def _capacity_mix_frame() -> pd.DataFrame:
+    # parse_capacity_mix: yıl 2. sütunda, 3 = taş kömürü, 14 = jeotermal, 15 = rüzgâr.
+    frame = pd.DataFrame([[None] * 18 for _ in range(2)])
+    frame.iloc[0, 2] = "YILLAR"
+    frame.iloc[0, 3:18] = _CAPACITY_MIX_HEADERS
+    frame.iloc[1, 2] = 2024
+    for column in range(3, 18):
+        frame.iloc[1, column] = float(column)
+    return frame
+
+
+class _AnnualTeias:
+    def __init__(self, frames: dict[str, pd.DataFrame]) -> None:
+        self.frames = frames
+
+    async def annual_workbook(self, selector: str) -> Workbook:
+        return workbook(selector, workbook_bytes(self.frames[selector]))
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("requested", "combined", "value", "label"),
+    [
+        ("rüzgar", "geothermal_and_wind", 45678.9, "saf rüzgâr değildir"),
+        ("Rüzgâr", "geothermal_and_wind", 45678.9, "saf rüzgâr değildir"),
+        ("wind", "geothermal_and_wind", 45678.9, "saf rüzgâr değildir"),
+        ("jeotermal", "geothermal_and_wind", 45678.9, "saf jeotermal değildir"),
+        ("taş kömürü", "hard_coal_and_asphaltite", 1234.5, "saf taş kömürü değildir"),
+        ("asfaltit", "hard_coal_and_asphaltite", 1234.5, "saf asfaltit değildir"),
+    ],
+)
+async def test_generation_maps_pure_source_to_combined_column_with_warning(
+    requested, combined, value, label
+):
+    service = EnergyService(_AnnualTeias({"generation_mix": _generation_mix_frame()}))
+    response = await service.get_generation(2024, 2024, requested)
+    assert response["data"] == [{"year": 2024, "source": combined, "generation_gwh": value}]
+    meta = response["metadata"]
+    assert meta["requested_source"] == requested
+    assert len(meta["warnings"]) == 1 and label in meta["warnings"][0]
+    assert combined in meta["warnings"][0]
+    assert meta["notes"].startswith("UYARI: TEİAŞ bu tabloda")
+
+
+@pytest.mark.asyncio
+async def test_generation_exact_source_has_no_combined_warning():
+    service = EnergyService(_AnnualTeias({"generation_mix": _generation_mix_frame()}))
+    response = await service.get_generation(2024, 2024, "güneş")
+    assert [r["source"] for r in response["data"]] == ["solar"]
+    assert "warnings" not in response["metadata"]
+    assert not response["metadata"]["notes"].startswith("UYARI")
+
+
+@pytest.mark.asyncio
+async def test_installed_capacity_keeps_pure_wind_and_hard_coal():
+    service = EnergyService(_AnnualTeias({"capacity_mix": _capacity_mix_frame()}))
+    wind = await service.get_installed_capacity(2024, 2024, "rüzgâr")
+    assert wind["data"] == [{"year": 2024, "source": "wind", "capacity_mw": 15.0}]
+    assert "warnings" not in wind["metadata"]
+    coal = await service.get_installed_capacity(2024, 2024, "taş kömürü")
+    assert [r["source"] for r in coal["data"]] == ["hard_coal"]
+    assert "warnings" not in coal["metadata"]
+
+
+@pytest.mark.asyncio
+async def test_euas_generation_maps_wind_to_combined_hydro_column_with_warning():
+    # parse_euas_generation_by_source: yıllar "ÜRETİM KARAKTERİSTİĞİ" satırında; EÜAŞ
+    # bloğu iki satır aşağıda başlar, ilk "Total" satırında biter; etiketler 3. sütunda,
+    # kuruluş adı 1. sütunda dikey harflerle (E/Ü/A/Ş) yazılır.
+    frame = pd.DataFrame([[None] * 6 for _ in range(12)])
+    frame.iloc[6, 1] = "ÜRETİM KARAKTERİSTİĞİ"
+    frame.iloc[6, 4] = 2024
+    frame.iloc[8:12, 1] = ["E", "Ü", "A", "Ş"]
+    frame.iloc[8, 3] = "Thermal Total"
+    frame.iloc[8, 4] = 100.0
+    frame.iloc[9, 3] = "Hydro+Jeothermal+Wind Total"
+    frame.iloc[9, 4] = 200.0
+    frame.iloc[11, 3] = "Total"
+    service = EnergyService(_AnnualTeias({"euas_generation_by_source": frame}))
+    for requested in ("rüzgâr", "hidro"):
+        response = await service.get_euas_generation(2024, 2024, requested)
+        assert response["data"] == [
+            {"year": 2024, "source": "hydro_geothermal_wind", "generation_gwh": 200.0}
+        ]
+        assert "değer saf" in response["metadata"]["warnings"][0]

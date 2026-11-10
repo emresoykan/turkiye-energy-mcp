@@ -54,6 +54,13 @@ Depo yerleşimi: `<klasör>/<tablo>/<YYYY>/<YYYY-MM>.csv` + `manifest.json`. Her
 düzeltilir ve lisanssız üretim ay sonuna kadar tahminidir. 15 dk yük serisi **anlık talep
 (MW)** değeridir; saatlik enerji için `saatlik_denge` (MWh) kullanılmalıdır.
 
+Zaman damgaları: 15 dk serisinde `zaman` dilimin **bitişini** gösterir; bir günün ilk
+noktası `00:15`, son noktası ertesi günün `00:00`'ıdır ve önceki günün `tarih`'i altında
+durur (YTBS'nin `24:00` etiketi bu biçime çevrilir). Saatlik tablolarda (`saatlik_denge`,
+`emre_amade`) `saat` saat-sonu etiketidir; `zaman_baslangic` ise dilimin **başlangıcıdır**
+(`saat` `01:00` → `zaman_baslangic` `00:00`). İki seriyi birleştirirken bu farkı hesaba
+katın.
+
 ## Mimari
 
 ```text
@@ -94,6 +101,26 @@ pip install -e '.[dev]'
 pytest
 ```
 
+### Bağımlılık kilidi
+
+`pyproject.toml` yalnız alt sınır + major üst sınır verir (ör. `mcp>=2,<3`;
+`server.py` yalnız 2.x SDK'da bulunan `mcp.server.MCPServer`'ı kullanır).
+Docker imajı, test edilmiş tam sürümleri içeren `constraints.txt` ile kurulur
+(`pip install -c constraints.txt .`), böylece build'ler tekrarlanabilir. Aynı
+sürümleri yerelde kurmak için: `pip install -c constraints.txt -e '.[dev]'`.
+
+Kilidi yenilemek (bağımlılık eklendiğinde veya sürüm yükseltirken):
+
+```bash
+uv pip compile pyproject.toml --python-version 3.12 --python-platform linux \
+  --no-header --no-annotate --upgrade -o constraints.txt
+pip install -c constraints.txt -e '.[dev]' && pytest
+```
+
+Dosyanın başındaki yorum satırlarını koruyun; Python sürümü Dockerfile'daki
+taban imajla (`python:3.12-slim`) aynı olmalıdır. Testler geçmeden yeni kilidi
+commit etmeyin.
+
 ## Çalıştırma
 
 Streamable HTTP:
@@ -131,6 +158,9 @@ MCP_TRANSPORT=stdio turkiye-energy-mcp
 | `TEIAS_BASE_URL` | resmî TEİAŞ URL | JSON katalog kökü |
 | `TEIAS_FILE_BASE_URL` | resmî TEİAŞ dosya URL | Dosya indirme kökü |
 | `PUBLIC_BASE_URL` | boş | Claude connector OAuth discovery origin'i (ör. Railway domain) |
+| `OAUTH_SIGNING_KEY` | boş | OAuth token'larını imzalayan HMAC anahtarı (`openssl rand -hex 32`). Boşsa her süreçte rastgele anahtar üretilir ve her deploy/restart sonrası connector yeniden yetkilendirme ister |
+| `OAUTH_ALLOWED_REDIRECT_HOSTS` | `claude.ai,claude.com` | `/authorize`'ın yönlendirebileceği ve DCR kaydında kabul edilen HTTPS redirect host'ları (virgülle ayrılmış, tam eşleşme). `localhost`/`127.0.0.1` her zaman serbesttir |
+| `MCP_API_KEY` | boş | Tanımlıysa `/mcp` eşleşen `X-API-Key` header'ı ister; health ve OAuth uçları açık kalır (bkz. Erişim Güvenliği) |
 | `YTBS_DATA_DIR` | boş | `ytbs-sync` CSV deposunun yerel klasörü (verilirse öncelikli) |
 | `YTBS_DATA_REPO` | boş | CSV deposunun GitHub reposu, `owner/repo` (Railway için) |
 | `YTBS_DATA_REF` | `main` | Veri reposunun dalı |
@@ -189,7 +219,13 @@ Toplam 23 production tool vardır (16 `teias_*`/EÜAŞ + 7 `ytbs_*`).
 | `ytbs_get_sync_status` | — | YTBS deposunun son senkronu, kapsadığı günler, hatalar |
 
 `ytbs_*` tool'ları `ytbs-sync` deposundan okur; yanıtlarda `provisional: true`,
-`missing_days` ve `storage_backend` metadata alanları bulunur.
+`missing_days`, `storage_backend` ve `last_synced_at` (deponun son senkron zamanı)
+metadata alanları bulunur. `data_freshness` `provisional`'dır; istenen günlerden biri
+depoda yoksa `partial` olur. `sources`/`source`/`items`
+YTBS kaynak kodlarını (ör. `ruzgar`, `barajli`, `akarsu`, `dogalgaz`), Türkçe yazımlarını
+veya İngilizce karşılıklarını (`wind`, `solar`, `natural_gas` ...) kabul eder; bilinmeyen
+bir ad (ör. `hydro`: YTBS barajlı/akarsu ayrımı yapar) sessizce düşürülmez, geçerli
+adları listeleyen `INVALID_PARAMETER` döner.
 
 Tarih biçimi `YYYY-MM-DD`, timezone `Europe/Istanbul`'dur. Yıllık tool'lar tam
 yıl alır. Güç `MW`, enerji `GWh`, trafo kapasitesi `MVA`, hat uzunluğu `km` olarak
@@ -293,8 +329,39 @@ HOST=0.0.0.0
 ```
 
 `PUBLIC_BASE_URL` Claude'un beklediği OAuth discovery / Dynamic Client Registration
-uçlarını açar. MCP araçları yine herkese açık kalır; OAuth yalnızca bağlayıcı
-uyumluluğu içindir.
+uçlarını açar. OAuth yalnızca bağlayıcı uyumluluğu içindir; verdiği token'lar `/mcp`
+erişimini kısıtlamaz. `MCP_API_KEY` tanımlı değilse MCP araçları URL'i bilen herkese
+açıktır; erişimi kısıtlamak için aşağıdaki API anahtarını kullanın.
+
+### Erişim Güvenliği (API Anahtarı)
+
+Veri kamuya açık olsa da, koruma olmadan **URL'i bilen herkes** bu deployment üzerinden
+TEİAŞ/GitHub'a istek attırabilir ve Railway kaynaklarını tüketebilir. `MCP_API_KEY`
+ayarlandığında MCP transport'u (`/mcp` ve açık listede olmayan her yol) eşleşen bir
+`X-API-Key` header'ı ister (sabit zamanlı karşılaştırma). Açık kalan yollar yalnızca tam
+eşleşmeyle şunlardır: `/health` (Railway health check header göndermez), `/` ve OAuth
+uçları (`/.well-known/*` discovery, `/register`, `/authorize`, `/token`) — Claude
+discovery sırasında özel header göndermez. `/mcp/`, `//mcp`, `/%6Dcp` veya `OPTIONS`
+gibi varyasyonlar da anahtar ister. Değişken boşsa auth devre dışıdır ve sunucu log'a
+uyarı basar.
+
+**Kesintisiz devreye alma sırası** — ters sırada yaparsanız connector arada 401 alır:
+
+1. Bu kodu deploy edin (`MCP_API_KEY` henüz tanımsız → auth kapalı, hiçbir şey bozulmaz).
+2. Anahtarı üretin: `openssl rand -hex 32`
+3. Claude connector ayarlarında **Add header** ile `X-API-Key` = üretilen değeri girin.
+   Connector hâlâ çalışır; sunucu bu header'ı şimdilik yok sayar. Claude Code için:
+   `claude mcp add --transport http turkiye-energy <url>/mcp --header "X-API-Key: <anahtar>"`
+4. Railway'de `MCP_API_KEY` değişkenini aynı değerle tanımlayın. Servis yeniden
+   başladığı anda auth devreye girer ve connector zaten header'ı gönderiyordur.
+
+Anahtar sızarsa 2-4. adımları yeni bir değerle tekrarlayın; URL'i değiştirmek
+veya connector'ı silip yeniden kurmak gerekmez.
+
+Railway her deploy'da servisi yeniden başlatır: `OAUTH_SIGNING_KEY` tanımlı değilse OAuth
+token'ları da her deploy'da geçersizleşir ve connector yeniden yetkilendirme ister. Bunu
+önlemek için `OAUTH_SIGNING_KEY` değişkenini de (`openssl rand -hex 32`) sabit bir değerle
+tanımlayın.
 
 Claude Code remote HTTP:
 

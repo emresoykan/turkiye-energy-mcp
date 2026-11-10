@@ -296,3 +296,200 @@ def test_sync_writes_utf8_log_and_keeps_stderr_clean_on_success(tmp_path, monkey
     text = log.read_text(encoding="utf-8")
     assert "günlük rapor gün bitince alınacak" in text
     assert "başarılı 1, hatalı 0" in text
+
+
+# --- Ayrıştırıcı sağlamlığı ve kısmi hata davranışı ---
+
+
+def _edited_excel(edit) -> bytes:
+    """Fixture çalışma kitabını `edit(wb)` ile değiştirip XLSX baytı olarak döndürür."""
+    import io
+
+    import openpyxl
+
+    wb = openpyxl.load_workbook(io.BytesIO(EXCEL))
+    edit(wb)
+    out = io.BytesIO()
+    wb.save(out)
+    return out.getvalue()
+
+
+def _sheet_titled(wb, fragment):
+    from turkiye_energy_mcp.ytbs.parsers import _sheet
+
+    return _sheet(wb, fragment)
+
+
+def _cell_with(ws, value):
+    return next(c for row in ws.iter_rows() for c in row if c.value == value)
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        (None, None),
+        ("", None),
+        ("-", None),
+        (" - ", None),
+        (12, 12.0),
+        (1.5, 1.5),
+        ("100", 100.0),
+        ("12,5", 12.5),
+        ("1.234,5", 1234.5),
+        ("-1.234,5", -1234.5),
+        ("1.234.567", 1234567.0),
+        ("12.5", 12.5),
+    ],
+)
+def test_num_handles_missing_and_turkish_format(raw, expected):
+    from turkiye_energy_mcp.ytbs.parsers import _num
+
+    assert _num(raw) == expected
+
+
+@pytest.mark.parametrize("raw", ["yok", "1.234", "-12.500"])
+def test_num_rejects_text_with_parsing_error(raw):
+    # "1.234" is ambiguous in a Turkish source (1234 or 1.234): fail, don't guess.
+    from turkiye_energy_mcp.ytbs.parsers import _num
+
+    with pytest.raises(EnergyDataError) as exc:
+        _num(raw)
+    assert exc.value.code == ErrorCode.PARSING_ERROR
+
+
+def test_tr_date_accepts_date_and_datetime_cells():
+    from turkiye_energy_mcp.ytbs.parsers import _tr_date
+
+    assert _tr_date("01.10.2026") == date(2026, 10, 1)
+    excel_cell = datetime(2026, 10, 1, 0, 0)  # noqa: DTZ001 - openpyxl tarihleri naive döner
+    assert _tr_date(excel_cell) == date(2026, 10, 1)
+    assert _tr_date(date(2026, 10, 1)) == date(2026, 10, 1)
+
+
+def test_daily_report_accepts_date_cells_and_dash_values():
+    def edit(wb):
+        peaks = _sheet_titled(wb, "GÜNLÜK TÜRKİYE PUANT RAPORU")
+        _cell_with(peaks, "13.08.2026").value = datetime(2026, 8, 13)  # noqa: DTZ001
+        regional = _sheet_titled(wb, "BÖLGESEL PUANT RAPORU")
+        trakya_day = _cell_with(regional, "Trakya YTM").offset(column=2)
+        trakya_day.value = datetime(2026, 10, 1)  # noqa: DTZ001
+        hourly = _sheet_titled(wb, "TÜKETİMİNİN SAATLİK GELİŞİMİ")
+        _cell_with(hourly, "01:00").offset(column=3).value = "-"
+        _cell_with(hourly, "02:00").offset(column=1).value = "11.900,02"
+
+    tables = parse_daily_report(_edited_excel(edit), expected_day=date(2026, 10, 1))
+    yearly = next(
+        r
+        for r in tables["puant"]
+        if r["donem"] == "YILLIK" and r["kalem"] == "MAKSİMUM ANLIK TALEP (MW)"
+    )
+    assert yearly["olay_tarihi"] == "2026-08-13"
+    trakya = next(r for r in tables["bolgesel_puant"] if r["bolge"] == "Trakya YTM")
+    assert trakya["puant_gunu"] == "2026-10-01"
+    hourly = tables["saatlik_denge"]
+    assert hourly[0]["depolama_desarj_mwh"] is None
+    assert hourly[1]["yenilenemez_uretim_mwh"] == pytest.approx(11900.02)
+
+
+def test_daily_report_missing_sheet_is_an_explicit_error():
+    def edit(wb):
+        wb.remove(_sheet_titled(wb, "BÖLGESEL PUANT RAPORU"))
+
+    with pytest.raises(EnergyDataError) as exc:
+        parse_daily_report(_edited_excel(edit), expected_day=date(2026, 10, 1))
+    assert exc.value.code == ErrorCode.PARSING_ERROR
+    assert "BÖLGESEL PUANT RAPORU" in exc.value.message
+
+
+def test_daily_report_empty_table_is_an_explicit_error():
+    def edit(wb):
+        regional = _sheet_titled(wb, "BÖLGESEL PUANT RAPORU")
+        header = _cell_with(regional, "BÖLGE ADI").row
+        regional.delete_rows(header + 1, regional.max_row)
+
+    with pytest.raises(EnergyDataError) as exc:
+        parse_daily_report(_edited_excel(edit), expected_day=date(2026, 10, 1))
+    assert exc.value.code == ErrorCode.PARSING_ERROR
+    assert exc.value.details["tables"] == ["bolgesel_puant"]
+
+
+@pytest.mark.parametrize(
+    ("fragment", "old", "new"),
+    [
+        ("TÜKETİMİNİN SAATLİK GELİŞİMİ", "03:00", "ab:00"),  # saat etiketi int değil
+        ("TÜKETİMİNİN SAATLİK GELİŞİMİ", 11596.538, "yok"),  # sayı değil
+        ("GÜNLÜK TÜRKİYE PUANT RAPORU", "13.08.2026", "2026-08-13"),  # tarih biçimi
+    ],
+)
+def test_daily_report_bad_cell_becomes_parsing_error(fragment, old, new):
+    def edit(wb):
+        _cell_with(_sheet_titled(wb, fragment), old).value = new
+
+    with pytest.raises(EnergyDataError) as exc:
+        parse_daily_report(_edited_excel(edit), expected_day=date(2026, 10, 1))
+    assert exc.value.code == ErrorCode.PARSING_ERROR
+
+
+def test_day_series_malformed_json_becomes_parsing_error():
+    broken = AJAX.replace('"kod"', '"kodu"')
+    with pytest.raises(EnergyDataError) as exc:
+        parse_day_series(broken, date(2026, 10, 18))
+    assert exc.value.code == ErrorCode.PARSING_ERROR
+
+
+class _FakeClient:
+    """Ağsız sahte YTBS istemcisi: her gün için tek 15 dk satırı ve boş Excel döndürür."""
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return None
+
+    def fetch_series(self, day):
+        return [{"tarih": day.isoformat(), "zaman": f"{day} 00:15", "yuk_mw": 1.0}]
+
+    def fetch_daily_excel(self, day):
+        return day.isoformat().encode()
+
+
+def _fake_tables(day_label):
+    from turkiye_energy_mcp.ytbs.parsers import EXCEL_TABLES
+
+    return {t: [{"tarih": day_label, "deger": 1.0}] for t in EXCEL_TABLES}
+
+
+def _run_fake_sync(tmp_path, monkeypatch, parse):
+    from turkiye_energy_mcp.ytbs import cli
+
+    monkeypatch.setattr(cli, "YtbsClient", _FakeClient)
+    monkeypatch.setattr(cli, "parse_daily_report", parse)
+    monkeypatch.setattr(cli, "_today", lambda: date(2026, 10, 10))
+    args = ["--baslangic", "2026-10-01", "--bitis", "2026-10-03"]
+    return cli.main([*args, "--veri-klasoru", str(tmp_path), "--bekleme", "0"])
+
+
+def test_sync_continues_after_unexpected_parser_error(tmp_path, monkeypatch):
+    def parse(content, expected_day):
+        if expected_day == date(2026, 10, 2):
+            raise KeyError("beklenmeyen")
+        return _fake_tables(expected_day.isoformat())
+
+    assert _run_fake_sync(tmp_path, monkeypatch, parse) == 1
+    store = CsvStore(tmp_path)
+    manifest = store.load_manifest()
+    assert set(manifest["gunler"]) == {"2026-10-01", "2026-10-03"}
+    assert "KeyError" in manifest["son_hatalar"]["2026-10-02"]
+    rows = store.read("puant", date(2026, 10, 1), date(2026, 10, 31))
+    assert [r["tarih"] for r in rows] == ["2026-10-01", "2026-10-03"]
+
+
+def test_sync_records_manifest_even_when_interrupted(tmp_path, monkeypatch):
+    def parse(content, expected_day):
+        if expected_day == date(2026, 10, 2):
+            raise KeyboardInterrupt
+        return _fake_tables(expected_day.isoformat())
+
+    with pytest.raises(KeyboardInterrupt):
+        _run_fake_sync(tmp_path, monkeypatch, parse)
+    assert set(CsvStore(tmp_path).load_manifest()["gunler"]) == {"2026-10-01"}

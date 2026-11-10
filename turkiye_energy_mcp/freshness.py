@@ -15,7 +15,7 @@ import re
 from datetime import date, datetime
 from typing import Any, Literal
 
-from .parsers.common import normalize_key
+from .parsers.common import ISTANBUL, normalize_key
 
 DataFreshness = Literal[
     "current",
@@ -250,7 +250,8 @@ def classify_monthly_freshness(
     returned_periods: list[str],
     current_date: date | None = None,
 ) -> DataFreshness:
-    today = current_date or date.today()
+    # TEİAŞ periods are Turkish calendar months; the container clock is UTC.
+    today = current_date or datetime.now(ISTANBUL).date()
     if not returned_periods:
         return "unavailable"
     actual_start = min(returned_periods)

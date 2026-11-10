@@ -1,6 +1,10 @@
-from datetime import date
+from datetime import date, datetime, timezone
 
+from turkiye_energy_mcp import freshness
+from turkiye_energy_mcp.clients.teias import TeiasClient
+from turkiye_energy_mcp.config import Settings
 from turkiye_energy_mcp.freshness import (
+    MONTHLY_GALLERY_PREFIX,
     classify_annual_freshness,
     classify_monthly_freshness,
     extract_month_period,
@@ -119,3 +123,50 @@ def test_monthly_freshness_labels():
         )
         == "historical"
     )
+
+
+def test_monthly_freshness_uses_istanbul_calendar(monkeypatch):
+    # 2026-12-31 22:30 UTC is already 2027-01-01 01:30 in Istanbul: December 2026 is
+    # a closed month there, although the (UTC) container clock still says December.
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            instant = datetime(2026, 12, 31, 22, 30, tzinfo=timezone.utc)
+            return instant.astimezone(tz) if tz else instant.replace(tzinfo=None)
+
+    monkeypatch.setattr(freshness, "datetime", Clock)
+    assert (
+        classify_monthly_freshness(
+            requested_start=date(2026, 12, 1),
+            requested_end=date(2026, 12, 31),
+            latest_available_period="2026-12",
+            returned_periods=["2026-12"],
+        )
+        == "historical"
+    )
+
+
+class _RecordingCache:
+    def __init__(self) -> None:
+        self.ttls: dict[str, int] = {}
+
+    async def get_or_set(self, key, loader, ttl_seconds):
+        self.ttls[key] = ttl_seconds
+        return await loader()
+
+
+class _GalleryHttp:
+    async def get_json(self, url, params=None):
+        return {"success": True, "payload": {"slug": params["slug"], "media": []}}
+
+
+async def test_monthly_gallery_listing_uses_monthly_ttl():
+    settings = Settings(cache_monthly_ttl_seconds=21600, cache_historical_ttl_seconds=86400)
+    cache = _RecordingCache()
+    client = TeiasClient(settings, _GalleryHttp(), cache)
+    await client.gallery(f"2026-{MONTHLY_GALLERY_PREFIX}")
+    await client.gallery("i-kurulu-guc-2025")
+    assert cache.ttls == {
+        f"teias:gallery:2026-{MONTHLY_GALLERY_PREFIX}": 21600,
+        "teias:gallery:i-kurulu-guc-2025": 86400,
+    }
