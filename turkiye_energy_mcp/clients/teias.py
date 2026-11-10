@@ -101,11 +101,13 @@ class TeiasClient:
                 )
             return payload["payload"]
 
-        return await self.cache.get_or_set(
-            f"teias:gallery:{slug}",
-            load,
-            self.settings.cache_historical_ttl_seconds,
+        # Monthly galleries gain a file every month; annual ones change rarely.
+        ttl = (
+            self.settings.cache_monthly_ttl_seconds
+            if slug.endswith(MONTHLY_GALLERY_PREFIX)
+            else self.settings.cache_historical_ttl_seconds
         )
+        return await self.cache.get_or_set(f"teias:gallery:{slug}", load, ttl)
 
     async def latest_annual_period(self, gallery_prefix: str) -> int:
         galleries = await self.list_galleries()
