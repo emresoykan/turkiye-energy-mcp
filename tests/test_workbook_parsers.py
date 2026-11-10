@@ -43,16 +43,17 @@ PEAK_DEMAND = "puant_kurulu_guc_1980-2025.xls"
 ENERGY_BALANCE = "uretim_ithalat_ihracat_2012-2025.xlsx"
 TRANSMISSION_LINES = "iletim_hat_uzunluk_1979-2025.xls"
 TRANSFORMERS = "trafo_adet_guc_1980-2025.xls"
+MONTHLY = "aylik_uretim_tuketim_2026-09.xlsx"  # 2026 monthly report, Jan-Sep
 
 
 def fixture_bytes(name: str) -> bytes:
     return (TEIAS_FIXTURES / name).read_bytes()
 
 
-def fixture_frame(name: str) -> pd.DataFrame:
+def fixture_frame(name: str, sheet: str | int = 0) -> pd.DataFrame:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")  # xlrd deprecation / openpyxl header noise
-        return pd.read_excel(TEIAS_FIXTURES / name, header=None)
+        return pd.read_excel(TEIAS_FIXTURES / name, sheet_name=sheet, header=None)
 
 
 def insert_column(frame: pd.DataFrame, at: int) -> pd.DataFrame:
@@ -215,39 +216,62 @@ def test_euas_generation_by_source_rejects_other_utility_block():
     assert_layout_error(parse_euas_generation_by_source, frame)
 
 
+MONTHLY_BY_SOURCE = "Kaynaklara Göre"
+MONTHLY_BY_UTILITY = "Kuruluşlara Göre"
+
+
 def test_teias_monthly_parser():
-    frame = pd.DataFrame([[None] * 15 for _ in range(12)])
-    frame.iloc[11, 1] = "WIND"
-    frame.iloc[11, 2] = 100.25
-    frame.iloc[11, 3] = 200.5
-    records = parse_monthly_energy(
-        workbook_bytes(frame, "Kaynaklara Göre"),
-        2026,
-    )
-    assert records == [
-        {"date": "2026-01", "metric": "wind", "value": 100.25},
-        {"date": "2026-02", "metric": "wind", "value": 200.5},
-    ]
+    records = parse_monthly_energy(fixture_bytes(MONTHLY), 2026)
+    assert {row["date"] for row in records} == {f"2026-{month:02d}" for month in range(1, 10)}
+    assert {"date": "2026-01", "metric": "wind", "value": 5227.048549} in records
+    assert {"date": "2026-09", "metric": "total_generation", "value": 31787.679365} in records
 
 
 def test_euas_monthly_parser_handles_blank_merged_cells():
-    frame = pd.DataFrame([[None] * 15 for _ in range(4)])
-    frame.iloc[0, 1] = "EÜAŞ"
-    frame.iloc[0, 2] = "HİDROLİK"
-    frame.iloc[1, 2] = "HYDRO"
-    frame.iloc[1, 3] = 10.5
-    frame.iloc[2, 2] = "TOTAL"
-    frame.iloc[2, 3] = 10.5
-    frame.iloc[3, 1] = "LİSANSSIZ SANTRALLER"
-    records = parse_monthly_euas_generation(
-        workbook_bytes(frame, "Kuruluşlara Göre"),
-        2026,
-    )
-    assert records[0] == {
-        "date": "2026-01",
-        "source": "hydro",
-        "generation_gwh": 10.5,
+    # TR caption rows ("HİDROLİK") are blank; values sit on the EN rows below.
+    records = parse_monthly_euas_generation(fixture_bytes(MONTHLY), 2026)
+    september = {
+        row["source"]: row["generation_gwh"] for row in records if row["date"] == "2026-09"
     }
+    assert september == {
+        "thermal": 777.07177,
+        "hydro": 5161.22059,
+        "wind": 0.0,
+        "total": 5938.29236,
+    }
+
+
+@pytest.mark.parametrize(
+    ("parser", "sheet", "column"),
+    [
+        (parse_monthly_energy, MONTHLY_BY_SOURCE, 0),  # OCAK no longer in column 2
+        (parse_monthly_energy, MONTHLY_BY_SOURCE, 5),  # extra column inside the months
+        (parse_monthly_energy, MONTHLY_BY_SOURCE, 13),  # before ARALIK
+        (parse_monthly_euas_generation, MONTHLY_BY_UTILITY, 2),
+        (parse_monthly_euas_generation, MONTHLY_BY_UTILITY, 8),
+    ],
+)
+def test_monthly_parsers_inserted_column_raises(parser, sheet, column):
+    shifted = insert_column(fixture_frame(MONTHLY, sheet), column)
+    with pytest.raises(EnergyDataError) as excinfo:
+        parser(workbook_bytes(shifted, sheet), 2026)
+    assert excinfo.value.code == ErrorCode.PARSING_ERROR
+    assert "düzeni beklenenden farklı" in excinfo.value.message
+
+
+@pytest.mark.parametrize(
+    ("parser", "sheet", "row"),
+    [
+        (parse_monthly_energy, MONTHLY_BY_SOURCE, 3),
+        (parse_monthly_energy, MONTHLY_BY_SOURCE, 20),
+        (parse_monthly_euas_generation, MONTHLY_BY_UTILITY, 6),
+        (parse_monthly_euas_generation, MONTHLY_BY_UTILITY, 14),  # inside the EÜAŞ block
+    ],
+)
+def test_monthly_parsers_inserted_row_keeps_values(parser, sheet, row):
+    expected = parser(fixture_bytes(MONTHLY), 2026)
+    shifted = insert_row(fixture_frame(MONTHLY, sheet), row)
+    assert parser(workbook_bytes(shifted, sheet), 2026) == expected
 
 
 def test_peak_parser_and_empty_dataset():

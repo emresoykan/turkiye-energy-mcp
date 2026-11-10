@@ -174,10 +174,42 @@ def _year_columns(df: pd.DataFrame, table: str, row: int) -> dict[int, int]:
     return years
 
 
+# TR / EN month captions printed above the monthly value columns.
+_MONTH_CAPTIONS: tuple[tuple[str, ...], ...] = (
+    ("ocak", "january"),
+    ("subat", "february"),
+    ("mart", "march"),
+    ("nisan", "april"),
+    ("mayis", "may"),
+    ("haziran", "june"),
+    ("temmuz", "july"),
+    ("agustos", "august"),
+    ("eylul", "september"),
+    ("ekim", "october"),
+    ("kasim", "november"),
+    ("aralik", "december"),
+)
+
+
+def _month_header_row(df: pd.DataFrame, table: str, first_column: int) -> int:
+    """Row of the OCAK caption; January..December must sit in consecutive columns."""
+    header_row, _ = _find_label(
+        df, table, "OCAK", lambda text: text == "ocak", column=first_column
+    )
+    _check_column_headers(
+        df,
+        table,
+        header_row,
+        {first_column + offset: tokens for offset, tokens in enumerate(_MONTH_CAPTIONS)},
+    )
+    return header_row
+
+
 def parse_monthly_energy(content: bytes, year: int) -> list[dict[str, Any]]:
     df = _frame(content, "Kaynaklara Göre")
+    header_row = _month_header_row(df, "aylık üretim / birincil enerji kaynakları", 2)
     records: list[dict[str, Any]] = []
-    for _, row in df.iterrows():
+    for _, row in df.iloc[header_row + 1 :].iterrows():
         label = clean_text(row.iloc[1] if len(row) > 1 else None)
         if not label:
             continue
@@ -195,9 +227,10 @@ def parse_monthly_energy(content: bytes, year: int) -> list[dict[str, Any]]:
 
 def parse_monthly_euas_generation(content: bytes, year: int) -> list[dict[str, Any]]:
     df = _frame(content, "Kuruluşlara Göre")
+    header_row = _month_header_row(df, "aylık üretim / üretici kuruluşlar", 3)
     records: list[dict[str, Any]] = []
     in_euas = False
-    for _, row in df.iterrows():
+    for _, row in df.iloc[header_row + 1 :].iterrows():
         organization = clean_text(row.iloc[1] if len(row) > 1 else None)
         label = clean_text(row.iloc[2] if len(row) > 2 else None)
         if organization and normalize_key(organization) == "euas":
