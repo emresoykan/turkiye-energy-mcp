@@ -333,6 +333,17 @@ def parse_peak_demand(content: bytes) -> list[dict[str, Any]]:
     return records
 
 
+_COUNTRY_TOKENS: dict[str, tuple[str, ...]] = {
+    "Bulgaria": ("bulgaria",),
+    "Greece": ("greece",),
+    "Azerbaijan": ("azerbaycan", "azerbaijan"),
+    "Georgia": ("georgia",),
+    "Syria": ("suriye", "syria"),
+    "Iran": ("iran",),
+    "Iraq": ("irak", "iraq"),
+}
+
+
 def parse_energy_balance(content: bytes) -> list[dict[str, Any]]:
     df = _frame(content)
     countries_import = {
@@ -352,8 +363,25 @@ def parse_energy_balance(content: bytes) -> list[dict[str, Any]]:
         19: "Syria",
         20: "Greece",
     }
+    table = "brüt üretim / ithalat / ihracat / talep"
+    header_row, _ = _find_label(df, table, "YILLAR", lambda text: text == "yillar", column=1)
+    # Generation, import and export totals are all captioned TOPLAM/TOTAL; their
+    # neighbours (country columns, gross demand) pin them in place.
+    _check_column_headers(
+        df,
+        table,
+        header_row,
+        {
+            5: ("toplam", "total"),
+            **{index: _COUNTRY_TOKENS[name] for index, name in countries_import.items()},
+            13: ("toplam", "total"),
+            **{index: _COUNTRY_TOKENS[name] for index, name in countries_export.items()},
+            21: ("toplam", "total"),
+            22: ("brut talep", "gross demand"),
+        },
+    )
     records: list[dict[str, Any]] = []
-    for _, row in df.iterrows():
+    for _, row in df.iloc[header_row + 1 :].iterrows():
         if len(row) <= 22 or not _is_year(row.iloc[1], 1900, 2100):
             continue
         year = int(float(row.iloc[1]))

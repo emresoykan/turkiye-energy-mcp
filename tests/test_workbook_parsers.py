@@ -11,6 +11,7 @@ from turkiye_energy_mcp.parsers import workbooks
 from turkiye_energy_mcp.parsers.workbooks import (
     parse_capacity_by_organization,
     parse_capacity_mix,
+    parse_energy_balance,
     parse_euas_generation_by_source,
     parse_euas_hydro_plants,
     parse_euas_thermal_plants,
@@ -37,6 +38,7 @@ GENERATION_MIX = "uretim_kaynak_2000-2025.xls"
 GENERATION_BY_ORG = "uretim_kurulus_2014-2025.xlsx"
 EUAS_BY_SOURCE = "uretim_kurulus_kaynak_2019-2025.xlsx"
 PEAK_DEMAND = "puant_kurulu_guc_1980-2025.xls"
+ENERGY_BALANCE = "uretim_ithalat_ihracat_2012-2025.xlsx"
 
 
 def fixture_bytes(name: str) -> bytes:
@@ -65,7 +67,9 @@ def assert_same_records(actual: list[dict], expected: list[dict]) -> None:
     # Rewriting through openpyxl can move a float by one unit in the 6th decimal.
     assert len(actual) == len(expected)
     for got, want in zip(actual, expected):
-        assert got == pytest.approx(want, abs=1e-5)
+        assert got.keys() == want.keys()
+        for key, value in want.items():  # one level at a time: approx is not recursive
+            assert got[key] == pytest.approx(value, abs=1e-5)
 
 
 def assert_layout_error(parser, frame: pd.DataFrame) -> EnergyDataError:
@@ -106,6 +110,7 @@ def test_teias_capacity_parser():
         (parse_generation_by_organization, GENERATION_BY_ORG),
         (parse_euas_generation_by_source, EUAS_BY_SOURCE),
         (parse_peak_demand, PEAK_DEMAND),
+        (parse_energy_balance, ENERGY_BALANCE),
     ],
 )
 def test_real_workbooks_round_trip_through_test_writer(parser, name):
@@ -283,6 +288,56 @@ def test_peak_parser_relabelled_column_raises():
     frame.iloc[11, 3] = "HOURLY"
     error = assert_layout_error(parse_peak_demand, frame)
     assert error.details["column"] == 3
+
+
+def test_energy_balance_real_workbook():
+    records = {row["year"]: row for row in parse_energy_balance(fixture_bytes(ENERGY_BALANCE))}
+    assert sorted(records) == list(range(2012, 2026))
+    latest = records[2025]
+    assert latest["generation_gwh"] == 366920.321254
+    assert latest["imports_gwh"] == 2012.967544
+    assert latest["exports_gwh"] == 4103.282119
+    assert latest["gross_demand_gwh"] == 364830.00668
+    assert latest["import_by_country_gwh"]["Georgia"] == 1262.81293
+    assert latest["export_by_country_gwh"]["Iraq"] == 1334.633677
+    # Gross demand = generation + imports - exports (TEİAŞ footnote 1).
+    assert latest["gross_demand_gwh"] == pytest.approx(
+        latest["generation_gwh"] + latest["net_import_gwh"], abs=1e-3
+    )
+
+
+@pytest.mark.parametrize(
+    ("column", "expected"),
+    [
+        (0, "YILLAR"),  # whole table shifted right: year header not in column 1
+        (5, ("toplam", "total")),  # new generation column before the total
+        (9, ("azerbaycan", "azerbaijan")),  # new import country
+        (14, ("bulgaria",)),  # column between import total and export block
+        (21, ("toplam", "total")),  # new export country before the total
+        (22, ("brut talep", "gross demand")),
+    ],
+)
+def test_energy_balance_inserted_column_raises(column, expected):
+    shifted = insert_column(fixture_frame(ENERGY_BALANCE), column)
+    error = assert_layout_error(parse_energy_balance, shifted)
+    if isinstance(expected, str):
+        assert error.details["expected_label"] == expected
+    else:
+        assert tuple(error.details["expected_any"]) == expected
+
+
+@pytest.mark.parametrize("row", [4, 12, 20])
+def test_energy_balance_inserted_row_keeps_values(row):
+    expected = parse_energy_balance(fixture_bytes(ENERGY_BALANCE))
+    shifted = insert_row(fixture_frame(ENERGY_BALANCE), row)
+    assert_same_records(parse_energy_balance(workbook_bytes(shifted)), expected)
+
+
+def test_energy_balance_row_inside_header_raises():
+    # Splitting the caption block pushes the English captions out of the
+    # checked window: refuse rather than guess.
+    shifted = insert_row(fixture_frame(ENERGY_BALANCE), 11)
+    assert_layout_error(parse_energy_balance, shifted)
 
 
 def test_euas_thermal_parser():
