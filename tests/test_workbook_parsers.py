@@ -1,12 +1,19 @@
 from io import BytesIO
+from pathlib import Path
+import warnings
 
 import pandas as pd
+import pytest
 
+from turkiye_energy_mcp.exceptions import EnergyDataError, ErrorCode
 from turkiye_energy_mcp.parsers.workbooks import (
+    parse_capacity_by_organization,
     parse_capacity_mix,
+    parse_euas_generation_by_source,
     parse_euas_hydro_plants,
     parse_euas_thermal_plants,
     parse_generation_by_organization,
+    parse_generation_mix,
     parse_monthly_energy,
     parse_monthly_euas_generation,
     parse_peak_demand,
@@ -20,16 +27,162 @@ def workbook_bytes(frame: pd.DataFrame, sheet_name: str = "Sheet1") -> bytes:
     return output.getvalue()
 
 
+# Real TEİAŞ yearly workbooks (2025 galleries), downloaded unmodified.
+TEIAS_FIXTURES = Path(__file__).parent / "fixtures" / "teias"
+CAPACITY_MIX = "kurulu_guc_kaynak_2006-2025.xls"
+CAPACITY_BY_ORG = "kurulu_guc_kurulus_2006-2025.xls"
+GENERATION_MIX = "uretim_kaynak_2000-2025.xls"
+GENERATION_BY_ORG = "uretim_kurulus_2014-2025.xlsx"
+EUAS_BY_SOURCE = "uretim_kurulus_kaynak_2019-2025.xlsx"
+
+
+def fixture_bytes(name: str) -> bytes:
+    return (TEIAS_FIXTURES / name).read_bytes()
+
+
+def fixture_frame(name: str) -> pd.DataFrame:
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")  # xlrd deprecation / openpyxl header noise
+        return pd.read_excel(TEIAS_FIXTURES / name, header=None)
+
+
+def insert_column(frame: pd.DataFrame, at: int) -> pd.DataFrame:
+    shifted = frame.copy()
+    shifted.insert(at, "inserted", None)
+    shifted.columns = range(shifted.shape[1])
+    return shifted
+
+
+def insert_row(frame: pd.DataFrame, at: int) -> pd.DataFrame:
+    blank = pd.DataFrame([[None] * frame.shape[1]], columns=frame.columns)
+    return pd.concat([frame.iloc[:at], blank, frame.iloc[at:]], ignore_index=True)
+
+
+def assert_same_records(actual: list[dict], expected: list[dict]) -> None:
+    # Rewriting through openpyxl can move a float by one unit in the 6th decimal.
+    assert len(actual) == len(expected)
+    for got, want in zip(actual, expected):
+        assert got == pytest.approx(want, abs=1e-5)
+
+
+def assert_layout_error(parser, frame: pd.DataFrame) -> EnergyDataError:
+    with pytest.raises(EnergyDataError) as excinfo:
+        parser(workbook_bytes(frame))
+    assert excinfo.value.code == ErrorCode.PARSING_ERROR
+    assert "düzeni beklenenden farklı" in excinfo.value.message
+    return excinfo.value
+
+
 def test_teias_capacity_parser():
-    frame = pd.DataFrame([[None] * 18 for _ in range(16)])
-    frame.iloc[15, 2] = 2024
-    frame.iloc[15, 13] = 32202.964
-    frame.iloc[15, 15] = 12870.7904
-    frame.iloc[15, 16] = 20232.112
-    frame.iloc[15, 17] = 116265.06573
-    records = parse_capacity_mix(workbook_bytes(frame))
-    assert {"year": 2024, "source": "wind", "capacity_mw": 12870.7904} in records
-    assert {"year": 2024, "source": "total", "capacity_mw": 116265.06573} in records
+    records = parse_capacity_mix(fixture_bytes(CAPACITY_MIX))
+    assert {"year": 2006, "source": "hard_coal", "capacity_mw": 1986.0} in records
+    assert {"year": 2025, "source": "total", "capacity_mw": 123302.990857} in records
+
+
+@pytest.mark.parametrize(
+    ("parser", "name"),
+    [
+        (parse_capacity_mix, CAPACITY_MIX),
+        (parse_capacity_by_organization, CAPACITY_BY_ORG),
+        (parse_generation_mix, GENERATION_MIX),
+        (parse_generation_by_organization, GENERATION_BY_ORG),
+        (parse_euas_generation_by_source, EUAS_BY_SOURCE),
+    ],
+)
+def test_real_workbooks_round_trip_through_test_writer(parser, name):
+    # Guards the in-memory mutation tests below: rewriting the unmodified fixture
+    # must not change the parse result.
+    original = parser(fixture_bytes(name))
+    assert original
+    assert_same_records(parser(workbook_bytes(fixture_frame(name))), original)
+
+
+def test_real_organization_workbooks_parse_euas_figures():
+    capacity = {
+        row["year"]: row for row in parse_capacity_by_organization(fixture_bytes(CAPACITY_BY_ORG))
+    }
+    assert capacity[2025] == {
+        "year": 2025,
+        "thermal_mw": 6359.94,
+        "renewable_mw": 14481.259,
+        "total_mw": 20841.199,
+    }
+    generation = {
+        row["year"]: row
+        for row in parse_generation_by_organization(fixture_bytes(GENERATION_BY_ORG))
+    }
+    assert generation[2025]["euas_generation_gwh"] == 44334.923976
+    by_source = parse_euas_generation_by_source(fixture_bytes(EUAS_BY_SOURCE))
+    assert {"year": 2025, "source": "total", "generation_gwh": 44334.923976} in by_source
+    # Turkey total in the utility table equals the general total in the source mix.
+    mix_total = {
+        row["year"]: row["generation_gwh"]
+        for row in parse_generation_mix(fixture_bytes(GENERATION_MIX))
+        if row["source"] == "total"
+    }
+    assert generation[2025]["turkey_generation_gwh"] == mix_total[2025]
+
+
+@pytest.mark.parametrize(
+    ("parser", "name", "column"),
+    [
+        (parse_capacity_mix, CAPACITY_MIX, 5),  # new fuel column after lignite
+        (parse_capacity_mix, CAPACITY_MIX, 16),  # new column before solar
+        (parse_capacity_mix, CAPACITY_MIX, 0),  # whole table shifted right
+        (parse_generation_mix, GENERATION_MIX, 3),
+        (parse_generation_mix, GENERATION_MIX, 15),
+        (parse_capacity_by_organization, CAPACITY_BY_ORG, 1),
+        (parse_euas_generation_by_source, EUAS_BY_SOURCE, 2),
+    ],
+)
+def test_inserted_column_raises_instead_of_shifting_values(parser, name, column):
+    assert_layout_error(parser, insert_column(fixture_frame(name), column))
+
+
+def test_capacity_mix_error_names_the_mismatched_column():
+    error = assert_layout_error(parse_capacity_mix, insert_column(fixture_frame(CAPACITY_MIX), 5))
+    assert error.details["column"] == 5
+    assert error.details["expected_any"] == ["sivi yakit", "liquid fuel"]
+
+
+def test_generation_by_organization_locates_columns_by_label():
+    expected = parse_generation_by_organization(fixture_bytes(GENERATION_BY_ORG))
+    for column in (0, 2, 5):
+        shifted = insert_column(fixture_frame(GENERATION_BY_ORG), column)
+        assert_same_records(parse_generation_by_organization(workbook_bytes(shifted)), expected)
+
+
+def test_generation_by_organization_without_euas_header_raises():
+    frame = fixture_frame(GENERATION_BY_ORG)
+    frame = frame.replace({"EÜAŞ": "BAŞKA KURULUŞ"})
+    assert_layout_error(parse_generation_by_organization, frame)
+
+
+def test_capacity_by_organization_locates_euas_block_by_label():
+    expected = parse_capacity_by_organization(fixture_bytes(CAPACITY_BY_ORG))
+    shifted = insert_row(fixture_frame(CAPACITY_BY_ORG), 4)  # extra title row
+    assert_same_records(parse_capacity_by_organization(workbook_bytes(shifted)), expected)
+
+
+def test_capacity_by_organization_row_inside_euas_block_raises():
+    frame = fixture_frame(CAPACITY_BY_ORG)
+    euas_row = next(i for i in range(len(frame)) if frame.iloc[i, 1] == "EÜAŞ")
+    # A new row between "TERMİK" and the EÜAŞ renewable row would make the
+    # positional thermal read pick up the English "THERMAL" caption row.
+    error = assert_layout_error(parse_capacity_by_organization, insert_row(frame, euas_row - 1))
+    assert error.details["expected_label"] == "termik"
+
+
+def test_euas_generation_by_source_rows_located_by_label():
+    expected = parse_euas_generation_by_source(fixture_bytes(EUAS_BY_SOURCE))
+    shifted = insert_row(fixture_frame(EUAS_BY_SOURCE), 12)  # blank row inside EÜAŞ block
+    assert_same_records(parse_euas_generation_by_source(workbook_bytes(shifted)), expected)
+
+
+def test_euas_generation_by_source_rejects_other_utility_block():
+    frame = fixture_frame(EUAS_BY_SOURCE)
+    frame.iloc[9:16, 1] = None  # vertical "E Ü A Ş" letters gone
+    assert_layout_error(parse_euas_generation_by_source, frame)
 
 
 def test_teias_monthly_parser():
@@ -176,11 +329,14 @@ def test_euas_hydro_parser_nulls_implausible_project_generation():
 
 
 def test_year_parser_ignores_footnote_containing_a_year():
-    frame = pd.DataFrame([[None] * 12 for _ in range(2)])
-    frame.iloc[0, 1] = 2024
-    frame.iloc[0, 2] = 54_957.1
-    frame.iloc[0, 11] = 354_570.2
-    frame.iloc[1, 1] = "* Lisans Eylül 2008 tarihinde dönüştürülmüştür."
+    frame = pd.DataFrame([[None] * 12 for _ in range(3)])
+    frame.iloc[0, 1] = "YILLAR"
+    frame.iloc[0, 2] = "EÜAŞ"
+    frame.iloc[0, 11] = "TÜRKİYE"
+    frame.iloc[1, 1] = 2024
+    frame.iloc[1, 2] = 54_957.1
+    frame.iloc[1, 11] = 354_570.2
+    frame.iloc[2, 1] = "* Lisans Eylül 2008 tarihinde dönüştürülmüştür."
     assert parse_generation_by_organization(workbook_bytes(frame)) == [
         {
             "year": 2024,

@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from io import BytesIO
 import re
 from typing import Any
@@ -85,6 +86,94 @@ def _cell(row: pd.Series, index: int) -> Any:
     return row.iloc[index] if index < len(row) else None
 
 
+# --- Layout guards -------------------------------------------------------------
+# The yearly TEİAŞ tables are read at fixed rows/columns. If TEİAŞ inserts a row or
+# column, positional reads would silently return a neighbouring series (e.g. a
+# different utility's MW or another fuel's GWh). These helpers anchor the positions
+# to the printed header labels and raise PARSING_ERROR instead of returning
+# shifted numbers. Labels are compared Turkish-insensitively (İ/ı, ş, ğ, ü, ...).
+
+
+def _label(value: Any) -> str:
+    text = clean_text(value)
+    return normalize_key(text) if text else ""
+
+
+def _has_token(text: str, token: str) -> bool:
+    # Token must start a word, so "thermal" does not match inside "geothermal".
+    return re.search(rf"(?<![a-z]){re.escape(token)}", text) is not None
+
+
+def _layout_error(table: str, problem: str, **details: Any) -> EnergyDataError:
+    return EnergyDataError(
+        ErrorCode.PARSING_ERROR,
+        f"TEİAŞ '{table}' tablosunun düzeni beklenenden farklı: {problem}. "
+        "Kaymış değer döndürmemek için ayrıştırma durduruldu.",
+        source="TEİAŞ",
+        details={"table": table, **details},
+    )
+
+
+def _cell_label(df: pd.DataFrame, row: int, column: int) -> str:
+    if 0 <= row < len(df) and 0 <= column < df.shape[1]:
+        return _label(df.iat[row, column])
+    return ""
+
+
+def _find_label(
+    df: pd.DataFrame,
+    table: str,
+    expected: str,
+    matches: Callable[[str], bool],
+    *,
+    column: int | None = None,
+    start_row: int = 0,
+    max_rows: int = 25,
+) -> tuple[int, int]:
+    columns = [column] if column is not None else range(df.shape[1])
+    for row in range(start_row, min(len(df), start_row + max_rows)):
+        for col in columns:
+            if matches(_cell_label(df, row, col)):
+                return row, col
+    raise _layout_error(
+        table,
+        f"'{expected}' etiketi bulunamadı",
+        expected_label=expected,
+        expected_column=column,
+    )
+
+
+def _check_column_headers(
+    df: pd.DataFrame,
+    table: str,
+    header_row: int,
+    expected: dict[int, tuple[str, ...]],
+) -> None:
+    """Each fixed column's header (TR + EN rows) must contain one of its tokens."""
+    rows = range(max(0, header_row - 2), header_row + 2)
+    for column, tokens in expected.items():
+        text = " ".join(filter(None, (_cell_label(df, row, column) for row in rows)))
+        if not any(_has_token(text, token) for token in tokens):
+            raise _layout_error(
+                table,
+                f"{column}. sütun başlığı beklenen etiketi içermiyor",
+                column=column,
+                expected_any=list(tokens),
+                found=text or None,
+            )
+
+
+def _year_columns(df: pd.DataFrame, table: str, row: int) -> dict[int, int]:
+    years = {
+        index: int(float(value))
+        for index, value in enumerate(df.iloc[row].tolist())
+        if _is_year(value, 1900, 2100)
+    }
+    if not years:
+        raise _layout_error(table, f"{row}. satırda yıl başlıkları yok", row=row)
+    return years
+
+
 def parse_monthly_energy(content: bytes, year: int) -> list[dict[str, Any]]:
     df = _frame(content, "Kaynaklara Göre")
     records: list[dict[str, Any]] = []
@@ -130,63 +219,83 @@ def parse_monthly_euas_generation(content: bytes, year: int) -> list[dict[str, A
     return records
 
 
+_CAPACITY_MIX_COLUMNS: dict[int, tuple[str, tuple[str, ...]]] = {
+    3: ("hard_coal", ("taskomuru", "hard coal")),
+    4: ("lignite", ("linyit", "lignite")),
+    5: ("liquid_fuels", ("sivi yakit", "liquid fuel")),
+    6: ("natural_gas", ("dogal gaz", "natural gas")),
+    7: ("waste_and_biomass", ("atik", "waste")),
+    8: ("single_fuel_total", ("toplam", "total")),
+    9: ("solid_and_liquid_multi_fuel", ("kati+sivi", "solid+liquid")),
+    10: ("liquid_and_gas_multi_fuel", ("sivi+d.gaz", "liquid+n.gas")),
+    11: ("multi_fuel_total", ("toplam", "total")),
+    12: ("thermal", ("termik", "thermal")),
+    13: ("hydro", ("hidrolik", "hydro")),
+    14: ("geothermal", ("jeotermal", "geothermal")),
+    15: ("wind", ("ruzgar", "wind")),
+    16: ("solar", ("gunes", "solar")),
+    17: ("total", ("genel", "general")),
+}
+
+
 def parse_capacity_mix(content: bytes) -> list[dict[str, Any]]:
     df = _frame(content)
-    columns = {
-        3: "hard_coal",
-        4: "lignite",
-        5: "liquid_fuels",
-        6: "natural_gas",
-        7: "waste_and_biomass",
-        8: "single_fuel_total",
-        9: "solid_and_liquid_multi_fuel",
-        10: "liquid_and_gas_multi_fuel",
-        11: "multi_fuel_total",
-        12: "thermal",
-        13: "hydro",
-        14: "geothermal",
-        15: "wind",
-        16: "solar",
-        17: "total",
-    }
+    table = "kurulu güç / birincil enerji kaynakları"
+    header_row, _ = _find_label(df, table, "YILLAR", lambda text: text == "yillar", column=2)
+    _check_column_headers(
+        df,
+        table,
+        header_row,
+        {index: tokens for index, (_, tokens) in _CAPACITY_MIX_COLUMNS.items()},
+    )
     records: list[dict[str, Any]] = []
-    for _, row in df.iterrows():
+    for _, row in df.iloc[header_row + 1 :].iterrows():
         if len(row) <= 17 or not _is_year(row.iloc[2], 1900, 2100):
             continue
         year = int(float(row.iloc[2]))
-        for index, source in columns.items():
+        for index, (source, _) in _CAPACITY_MIX_COLUMNS.items():
             value = number(row.iloc[index])
             if value is not None:
                 records.append({"year": year, "source": source, "capacity_mw": value})
     return records
 
 
+_GENERATION_MIX_COLUMNS: dict[int, tuple[str, tuple[str, ...]]] = {
+    2: ("hard_coal_and_asphaltite", ("taskomuru", "hard coal")),
+    3: ("imported_coal", ("ithal komur", "imported coal")),
+    4: ("lignite", ("linyit", "lignite")),
+    5: ("coal_total", ("toplam", "total")),
+    6: ("fuel_oil", ("fuel-oil", "fuel oil")),
+    7: ("diesel_oil", ("motorin", "diesel")),
+    8: ("lpg", ("lpg",)),
+    9: ("naphtha", ("nafta", "naphtha")),
+    10: ("liquid_fuels_total", ("toplam", "total")),
+    11: ("natural_gas", ("dogal gaz", "natural gas")),
+    12: ("waste_and_biomass", ("atik", "waste")),
+    13: ("thermal", ("termik", "thermal")),
+    14: ("hydro", ("hidrolik", "hydro")),
+    15: ("geothermal_and_wind", ("ruzgar", "wind")),
+    16: ("solar", ("gunes", "solar")),
+    17: ("total", ("genel", "general")),
+}
+
+
 def parse_generation_mix(content: bytes) -> list[dict[str, Any]]:
     df = _frame(content)
-    columns = {
-        2: "hard_coal_and_asphaltite",
-        3: "imported_coal",
-        4: "lignite",
-        5: "coal_total",
-        6: "fuel_oil",
-        7: "diesel_oil",
-        8: "lpg",
-        9: "naphtha",
-        10: "liquid_fuels_total",
-        11: "natural_gas",
-        12: "waste_and_biomass",
-        13: "thermal",
-        14: "hydro",
-        15: "geothermal_and_wind",
-        16: "solar",
-        17: "total",
-    }
+    table = "brüt üretim / birincil enerji kaynakları"
+    header_row, _ = _find_label(df, table, "YILLAR", lambda text: text == "yillar", column=1)
+    _check_column_headers(
+        df,
+        table,
+        header_row,
+        {index: tokens for index, (_, tokens) in _GENERATION_MIX_COLUMNS.items()},
+    )
     records: list[dict[str, Any]] = []
-    for _, row in df.iterrows():
+    for _, row in df.iloc[header_row + 1 :].iterrows():
         if len(row) <= 17 or not _is_year(row.iloc[1], 1900, 2100):
             continue
         year = int(float(row.iloc[1]))
-        for index, source in columns.items():
+        for index, (source, _) in _GENERATION_MIX_COLUMNS.items():
             value = number(row.iloc[index])
             if value is not None:
                 records.append({"year": year, "source": source, "generation_gwh": value})
@@ -302,16 +411,35 @@ def parse_transformers(content: bytes) -> list[dict[str, Any]]:
 
 def parse_capacity_by_organization(content: bytes) -> list[dict[str, Any]]:
     df = _frame(content)
-    years = {
-        index: int(float(value))
-        for index, value in enumerate(df.iloc[6].tolist())
-        if _is_year(value, 1900, 2100)
+    table = "kurulu güç / üretici kuruluşlar"
+    header_row, _ = _find_label(
+        df, table, "KURULUŞLAR", lambda text: text == "kuruluslar", column=1
+    )
+    years = _year_columns(df, table, header_row)
+    # The EÜAŞ label sits on the middle (renewable) row of its three-row block;
+    # an exact match skips "EÜAŞ'IN BAĞLI ORTAKLIKLARI".
+    euas_row, _ = _find_label(
+        df, table, "EÜAŞ", lambda text: text == "euas", column=1, start_row=header_row + 1
+    )
+    row_mapping = {
+        euas_row - 2: ("thermal_mw", "termik"),
+        euas_row: ("renewable_mw", "hidrolik"),
+        euas_row + 2: ("total_mw", "toplam"),
     }
+    for row_index, (_, expected) in row_mapping.items():
+        found = _cell_label(df, row_index, 2)
+        if row_index <= header_row or not _has_token(found, expected):
+            raise _layout_error(
+                table,
+                f"EÜAŞ bloğunda {row_index}. satır etiketi beklenenden farklı",
+                row=row_index,
+                expected_label=expected,
+                found=found or None,
+            )
     result: dict[int, dict[str, Any]] = {
         year: {"year": year} for year in years.values()
     }
-    row_mapping = {8: "thermal_mw", 10: "renewable_mw", 12: "total_mw"}
-    for row_index, field in row_mapping.items():
+    for row_index, (field, _) in row_mapping.items():
         for column, year in years.items():
             result[year][field] = number(df.iloc[row_index, column])
     return list(result.values())
@@ -319,15 +447,30 @@ def parse_capacity_by_organization(content: bytes) -> list[dict[str, Any]]:
 
 def parse_generation_by_organization(content: bytes) -> list[dict[str, Any]]:
     df = _frame(content)
+    table = "brüt üretim / üretici kuruluşlar"
+    header_row, year_column = _find_label(df, table, "YILLAR", lambda text: text == "yillar")
+    # Locate the utility columns by their header text rather than by index.
+    header_rows = range(max(0, header_row - 1), header_row + 4)
+
+    def column_of(expected: str, labels: set[str]) -> int:
+        for column in range(df.shape[1]):
+            if any(_cell_label(df, row, column) in labels for row in header_rows):
+                return column
+        raise _layout_error(
+            table, f"'{expected}' sütunu bulunamadı", expected_label=expected
+        )
+
+    euas_column = column_of("EÜAŞ", {"euas"})
+    turkey_column = column_of("TÜRKİYE", {"turkiye", "turkey"})
     records: list[dict[str, Any]] = []
-    for _, row in df.iterrows():
-        if len(row) <= 11 or not _is_year(row.iloc[1], 1900, 2100):
+    for _, row in df.iloc[header_row + 1 :].iterrows():
+        if not _is_year(_cell(row, year_column), 1900, 2100):
             continue
         records.append(
             {
-                "year": int(float(row.iloc[1])),
-                "euas_generation_gwh": number(row.iloc[2]),
-                "turkey_generation_gwh": number(row.iloc[11]),
+                "year": int(float(row.iloc[year_column])),
+                "euas_generation_gwh": number(_cell(row, euas_column)),
+                "turkey_generation_gwh": number(_cell(row, turkey_column)),
             }
         )
     return records
@@ -335,13 +478,41 @@ def parse_generation_by_organization(content: bytes) -> list[dict[str, Any]]:
 
 def parse_euas_generation_by_source(content: bytes) -> list[dict[str, Any]]:
     df = _frame(content)
-    years = {
-        index: int(float(value))
-        for index, value in enumerate(df.iloc[6].tolist())
-        if _is_year(value, 1900, 2100)
-    }
+    table = "brüt üretim / üretici kuruluş ve kaynak"
+    header_row, _ = _find_label(
+        df,
+        table,
+        "ÜRETİM KARAKTERİSTİĞİ",
+        lambda text: text.startswith(("uretim karakteristig", "generation characteristic")),
+        column=1,
+    )
+    years = _year_columns(df, table, header_row)
+    # EÜAŞ is the first utility block: from the first data row through its first
+    # "Total" row (English labels in column 3). Its name is printed vertically,
+    # one letter per row ("E", "Ü", "A", "Ş") in column 1.
+    start = header_row + 2
+    end = next(
+        (
+            row
+            for row in range(start, min(len(df), start + 20))
+            if _cell_label(df, row, 3) == "total"
+        ),
+        None,
+    )
+    if end is None:
+        raise _layout_error(
+            table, "EÜAŞ bloğunun 'Total' satırı bulunamadı", expected_label="Total"
+        )
+    organization = "".join(_cell_label(df, row, 1) for row in range(start, end + 1))
+    if organization.replace(" ", "") != "euas":
+        raise _layout_error(
+            table,
+            "ilk kuruluş bloğu EÜAŞ değil",
+            expected_label="EÜAŞ",
+            found=organization or None,
+        )
     result: list[dict[str, Any]] = []
-    for row_index in range(8, 18):
+    for row_index in range(start, end + 1):
         source_label = clean_text(df.iloc[row_index, 3])
         source = SOURCE_ALIASES.get(normalize_key(source_label or ""))
         if not source:
