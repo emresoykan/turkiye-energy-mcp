@@ -160,3 +160,19 @@ async def test_known_source_names_still_filter(data_dir):
     with pytest.raises(EnergyDataError) as exc:
         await svc.get_daily_generation("2026-10-01", "2026-10-01", "kaynak", "nükleer")
     assert exc.value.code == ErrorCode.DATA_NOT_AVAILABLE
+
+
+async def test_15min_zaman_marks_interval_end(data_dir):
+    result = await make_service(ytbs_data_dir=str(data_dir)).get_load_generation_15min(
+        "2026-10-18", "2026-10-18"
+    )
+    rows = result["data"]
+    assert len(rows) == 96
+    assert (rows[0]["tarih"], rows[0]["zaman"]) == ("2026-10-18", "2026-10-18 00:15")
+    assert (rows[-1]["tarih"], rows[-1]["zaman"]) == ("2026-10-18", "2026-10-19 00:00")
+    assert "BİTİŞİNİ" in result["metadata"]["notes"]
+    hourly = await make_service(ytbs_data_dir=str(data_dir)).get_hourly_balance(
+        "2026-10-01", "2026-10-01"
+    )
+    first = hourly["data"][0]
+    assert (first["saat"], first["zaman_baslangic"]) == ("01:00", "2026-10-01 00:00")

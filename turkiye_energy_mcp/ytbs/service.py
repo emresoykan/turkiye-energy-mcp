@@ -215,7 +215,10 @@ class YtbsService:
             notes=(
                 "yuk_mw anlık talep değeridir (günlük maksimumu 'maksimum anlık talep' ile aynı); "
                 "MWh'e çevrilmemelidir. Kaynak bazlı üretim lisanssız üretimi içerir. "
-                "Yayımlanmamış dilimler null'dır."
+                "Yayımlanmamış dilimler null'dır. zaman 15 dakikalık dilimin BİTİŞİNİ "
+                "işaretler: bir günün ilk noktası 00:15, son noktası ertesi günün 00:00'ıdır "
+                "ve önceki günün tarih'i altında yer alır (saatlik tablolardaki "
+                "zaman_baslangic ise dilim başlangıcıdır)."
             ),
         )
 

@@ -54,6 +54,13 @@ Depo yerleşimi: `<klasör>/<tablo>/<YYYY>/<YYYY-MM>.csv` + `manifest.json`. Her
 düzeltilir ve lisanssız üretim ay sonuna kadar tahminidir. 15 dk yük serisi **anlık talep
 (MW)** değeridir; saatlik enerji için `saatlik_denge` (MWh) kullanılmalıdır.
 
+Zaman damgaları: 15 dk serisinde `zaman` dilimin **bitişini** gösterir; bir günün ilk
+noktası `00:15`, son noktası ertesi günün `00:00`'ıdır ve önceki günün `tarih`'i altında
+durur (YTBS'nin `24:00` etiketi bu biçime çevrilir). Saatlik tablolarda (`saatlik_denge`,
+`emre_amade`) `saat` saat-sonu etiketidir; `zaman_baslangic` ise dilimin **başlangıcıdır**
+(`saat` `01:00` → `zaman_baslangic` `00:00`). İki seriyi birleştirirken bu farkı hesaba
+katın.
+
 ## Mimari
 
 ```text

@@ -283,6 +283,8 @@ async def ytbs_get_load_generation_15min(
     En fazla 7 gün. sources örnekleri: rüzgar, güneş, doğalgaz, barajlı, ithal kömür;
     bilinmeyen ad (ör. "hydro") geçerli adları listeleyen INVALID_PARAMETER döndürür.
     yuk_mw anlık talep değeridir; enerji (MWh) için ytbs_get_hourly_balance kullanın.
+    zaman dilim SONUDUR: ilk nokta 00:15, son nokta ertesi gün 00:00 (önceki günün tarih'i
+    altında); saatlik tablolar ise dilim başlangıcını zaman_baslangic olarak verir.
     """
     return await _safe(ytbs.get_load_generation_15min(start_date, end_date, sources))
 
