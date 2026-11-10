@@ -407,44 +407,76 @@ def parse_energy_balance(content: bytes) -> list[dict[str, Any]]:
     return records
 
 
+_TRANSMISSION_LINE_COLUMNS: dict[int, tuple[str, tuple[str, ...]]] = {
+    2: ("line_380kv_km", ("380 kv",)),
+    3: ("line_220kv_km", ("220 kv",)),
+    4: ("line_154kv_km", ("154 kv",)),
+    5: ("line_66kv_km", ("66 kv",)),
+    6: ("total_line_km", ("toplam", "total")),
+}
+
+
 def parse_transmission_lines(content: bytes) -> list[dict[str, Any]]:
     df = _frame(content)
+    table = "iletim hat uzunlukları"
+    header_row, _ = _find_label(df, table, "YILLAR", lambda text: text == "yillar", column=1)
+    _check_column_headers(
+        df,
+        table,
+        header_row,
+        {index: tokens for index, (_, tokens) in _TRANSMISSION_LINE_COLUMNS.items()},
+    )
     records: list[dict[str, Any]] = []
-    for _, row in df.iterrows():
+    for _, row in df.iloc[header_row + 1 :].iterrows():
         if len(row) <= 6 or not _is_year(row.iloc[1], 1900, 2100):
             continue
-        records.append(
-            {
-                "year": int(float(row.iloc[1])),
-                "line_380kv_km": number(row.iloc[2]),
-                "line_220kv_km": number(row.iloc[3]),
-                "line_154kv_km": number(row.iloc[4]),
-                "line_66kv_km": number(row.iloc[5]),
-                "total_line_km": number(row.iloc[6]),
-            }
-        )
+        record: dict[str, Any] = {"year": int(float(row.iloc[1]))}
+        for index, (field, _) in _TRANSMISSION_LINE_COLUMNS.items():
+            record[field] = number(row.iloc[index])
+        records.append(record)
     return records
+
+
+# Each voltage level spans a count column and an MVA column; the voltage caption
+# is printed above the count column only (merged cells).
+_TRANSFORMER_VOLTAGE_COLUMNS: dict[int, tuple[str, ...]] = {
+    2: ("380 kv",),
+    4: ("154 kv",),
+    6: ("66 kv",),
+    8: ("toplam", "total"),
+}
+_TRANSFORMER_COLUMNS: dict[int, tuple[str, tuple[str, ...]]] = {
+    2: ("transformers_380kv", ("adet", "number")),
+    3: ("capacity_380kv_mva", ("mva",)),
+    4: ("transformers_154kv", ("adet", "number")),
+    5: ("capacity_154kv_mva", ("mva",)),
+    6: ("transformers_66kv_and_below", ("adet", "number")),
+    7: ("capacity_66kv_and_below_mva", ("mva",)),
+    8: ("total_transformers", ("adet", "number")),
+    9: ("total_capacity_mva", ("mva",)),
+}
 
 
 def parse_transformers(content: bytes) -> list[dict[str, Any]]:
     df = _frame(content)
+    table = "trafo adet ve güçleri"
+    header_row, _ = _find_label(df, table, "YILLAR", lambda text: text == "yillar", column=1)
+    _check_column_headers(df, table, header_row, _TRANSFORMER_VOLTAGE_COLUMNS)
+    _check_column_headers(
+        df,
+        table,
+        header_row,
+        {index: tokens for index, (_, tokens) in _TRANSFORMER_COLUMNS.items()},
+    )
     records: list[dict[str, Any]] = []
-    for _, row in df.iterrows():
+    for _, row in df.iloc[header_row + 1 :].iterrows():
         if len(row) <= 9 or not _is_year(row.iloc[1], 1900, 2100):
             continue
-        records.append(
-            {
-                "year": int(float(row.iloc[1])),
-                "transformers_380kv": int(number(row.iloc[2]) or 0),
-                "capacity_380kv_mva": number(row.iloc[3]),
-                "transformers_154kv": int(number(row.iloc[4]) or 0),
-                "capacity_154kv_mva": number(row.iloc[5]),
-                "transformers_66kv_and_below": int(number(row.iloc[6]) or 0),
-                "capacity_66kv_and_below_mva": number(row.iloc[7]),
-                "total_transformers": int(number(row.iloc[8]) or 0),
-                "total_capacity_mva": number(row.iloc[9]),
-            }
-        )
+        record: dict[str, Any] = {"year": int(float(row.iloc[1]))}
+        for index, (field, _) in _TRANSFORMER_COLUMNS.items():
+            value = number(row.iloc[index])
+            record[field] = value if field.endswith("_mva") else int(value or 0)
+        records.append(record)
     return records
 
 

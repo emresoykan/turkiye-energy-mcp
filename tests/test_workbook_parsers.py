@@ -20,6 +20,8 @@ from turkiye_energy_mcp.parsers.workbooks import (
     parse_monthly_energy,
     parse_monthly_euas_generation,
     parse_peak_demand,
+    parse_transformers,
+    parse_transmission_lines,
 )
 
 
@@ -39,6 +41,8 @@ GENERATION_BY_ORG = "uretim_kurulus_2014-2025.xlsx"
 EUAS_BY_SOURCE = "uretim_kurulus_kaynak_2019-2025.xlsx"
 PEAK_DEMAND = "puant_kurulu_guc_1980-2025.xls"
 ENERGY_BALANCE = "uretim_ithalat_ihracat_2012-2025.xlsx"
+TRANSMISSION_LINES = "iletim_hat_uzunluk_1979-2025.xls"
+TRANSFORMERS = "trafo_adet_guc_1980-2025.xls"
 
 
 def fixture_bytes(name: str) -> bytes:
@@ -111,6 +115,8 @@ def test_teias_capacity_parser():
         (parse_euas_generation_by_source, EUAS_BY_SOURCE),
         (parse_peak_demand, PEAK_DEMAND),
         (parse_energy_balance, ENERGY_BALANCE),
+        (parse_transmission_lines, TRANSMISSION_LINES),
+        (parse_transformers, TRANSFORMERS),
     ],
 )
 def test_real_workbooks_round_trip_through_test_writer(parser, name):
@@ -338,6 +344,77 @@ def test_energy_balance_row_inside_header_raises():
     # checked window: refuse rather than guess.
     shifted = insert_row(fixture_frame(ENERGY_BALANCE), 11)
     assert_layout_error(parse_energy_balance, shifted)
+
+
+def test_grid_workbooks_real_values():
+    lines = {
+        row["year"]: row for row in parse_transmission_lines(fixture_bytes(TRANSMISSION_LINES))
+    }
+    assert sorted(lines) == list(range(1979, 2026))
+    assert lines[2025] == {
+        "year": 2025,
+        "line_380kv_km": 26902.05,
+        "line_220kv_km": 85.35,
+        "line_154kv_km": 49594.18,
+        "line_66kv_km": 119.53,
+        "total_line_km": 76701.11,
+    }
+    transformers = {row["year"]: row for row in parse_transformers(fixture_bytes(TRANSFORMERS))}
+    assert sorted(transformers) == list(range(1980, 2026))
+    assert transformers[2025] == {
+        "year": 2025,
+        "transformers_380kv": 450,
+        "capacity_380kv_mva": 95532.5,
+        "transformers_154kv": 1756,
+        "capacity_154kv_mva": 141970.99,
+        "transformers_66kv_and_below": 18,
+        "capacity_66kv_and_below_mva": 215.05,
+        "total_transformers": 2224,
+        "total_capacity_mva": 237718.54,
+    }
+
+
+@pytest.mark.parametrize(
+    ("parser", "name", "column"),
+    [
+        (parse_transmission_lines, TRANSMISSION_LINES, 0),
+        (parse_transmission_lines, TRANSMISSION_LINES, 3),  # e.g. a new 400 kV column
+        (parse_transmission_lines, TRANSMISSION_LINES, 6),
+        (parse_transformers, TRANSFORMERS, 0),
+        (parse_transformers, TRANSFORMERS, 3),  # splits the 380 kV count/MVA pair
+        (parse_transformers, TRANSFORMERS, 4),  # new voltage level after 380 kV
+        (parse_transformers, TRANSFORMERS, 8),
+    ],
+)
+def test_grid_workbooks_inserted_column_raises(parser, name, column):
+    assert_layout_error(parser, insert_column(fixture_frame(name), column))
+
+
+def test_transformers_new_voltage_pair_raises():
+    # A whole new count/MVA pair (e.g. 220 kV) passes the per-column
+    # ADET/MVA checks; the voltage caption above it must not.
+    frame = insert_column(insert_column(fixture_frame(TRANSFORMERS), 4), 4)
+    frame.iloc[8, 4] = "220 kV"
+    frame.iloc[10, 4:6] = ["ADET", "GÜÇ (MVA)"]
+    error = assert_layout_error(parse_transformers, frame)
+    assert error.details["column"] == 4
+    assert error.details["expected_any"] == ["154 kv"]
+
+
+@pytest.mark.parametrize(
+    ("parser", "name", "row"),
+    [
+        (parse_transmission_lines, TRANSMISSION_LINES, 4),
+        (parse_transmission_lines, TRANSMISSION_LINES, 9),
+        (parse_transmission_lines, TRANSMISSION_LINES, 30),
+        (parse_transformers, TRANSFORMERS, 5),
+        (parse_transformers, TRANSFORMERS, 12),
+        (parse_transformers, TRANSFORMERS, 40),
+    ],
+)
+def test_grid_workbooks_inserted_row_keeps_values(parser, name, row):
+    expected = parser(fixture_bytes(name))
+    assert_same_records(parser(workbook_bytes(insert_row(fixture_frame(name), row))), expected)
 
 
 def test_euas_thermal_parser():
