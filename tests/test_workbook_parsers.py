@@ -100,7 +100,12 @@ LEGACY_OUTPUT = json.loads(
 )
 def test_real_workbooks_match_fixed_position_output(entry):
     parser = getattr(workbooks, entry["parser"])
-    assert parser(fixture_bytes(entry["fixture"]), *entry["args"]) == entry["records"]
+    records = parser(fixture_bytes(entry["fixture"]), *entry["args"])
+    if entry["parser"] == "parse_monthly_euas_generation":
+        # Deliberate change after the legacy capture: the "GEOHTERMAL" row is
+        # now read (see test_monthly_euas_generation_reads_misspelled_geothermal_row).
+        records = [r for r in records if r["source"] != "geothermal"]
+    assert records == entry["records"]
 
 
 def test_teias_capacity_parser():
@@ -242,6 +247,7 @@ def test_euas_monthly_parser_handles_blank_merged_cells():
     assert september == {
         "thermal": 777.07177,
         "hydro": 5161.22059,
+        "geothermal": 0.0,
         "wind": 0.0,
         "total": 5938.29236,
     }
@@ -648,3 +654,17 @@ def test_year_parser_ignores_footnote_containing_a_year():
             "turkey_generation_gwh": 354570.2,
         }
     ]
+
+
+def test_monthly_euas_generation_reads_misspelled_geothermal_row():
+    # The monthly report labels EÜAŞ geothermal "GEOHTERMAL"; it used to be
+    # dropped silently. Components must add up to the reported TOTAL.
+    content = (TEIAS_FIXTURES / MONTHLY).read_bytes()
+    records = workbooks.parse_monthly_euas_generation(content, 2026)
+    by_source = {}
+    for record in records:
+        by_source.setdefault(record["source"], {})[record["date"]] = record["generation_gwh"]
+    assert "geothermal" in by_source
+    for month, total in by_source["total"].items():
+        parts = sum(by_source[s].get(month, 0.0) for s in ("thermal", "hydro", "geothermal", "wind"))
+        assert parts == pytest.approx(total, abs=1e-6)

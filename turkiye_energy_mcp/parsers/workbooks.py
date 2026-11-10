@@ -43,6 +43,7 @@ SOURCE_ALIASES = {
     "geothermal": "geothermal",
     "geoht ermal": "geothermal",
     "geo hthermal": "geothermal",
+    "geohtermal": "geothermal",  # TEİAŞ aylık rapor yazımı ("GEOHTERMAL")
     "wind": "wind",
     "solar": "solar",
     "gross generation": "total_generation",
