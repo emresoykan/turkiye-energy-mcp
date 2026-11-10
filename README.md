@@ -212,7 +212,9 @@ Toplam 23 production tool vardır (16 `teias_*`/EÜAŞ + 7 `ytbs_*`).
 | `ytbs_get_sync_status` | — | YTBS deposunun son senkronu, kapsadığı günler, hatalar |
 
 `ytbs_*` tool'ları `ytbs-sync` deposundan okur; yanıtlarda `provisional: true`,
-`missing_days` ve `storage_backend` metadata alanları bulunur. `sources`/`source`/`items`
+`missing_days`, `storage_backend` ve `last_synced_at` (deponun son senkron zamanı)
+metadata alanları bulunur. `data_freshness` `provisional`'dır; istenen günlerden biri
+depoda yoksa `partial` olur. `sources`/`source`/`items`
 YTBS kaynak kodlarını (ör. `ruzgar`, `barajli`, `akarsu`, `dogalgaz`), Türkçe yazımlarını
 veya İngilizce karşılıklarını (`wind`, `solar`, `natural_gas` ...) kabul eder; bilinmeyen
 bir ad (ör. `hydro`: YTBS barajlı/akarsu ayrımı yapar) sessizce düşürülmez, geçerli

@@ -171,6 +171,7 @@ class YtbsService:
         manifest = await self.repo.manifest()
         days = sorted({r["tarih"] for r in data})
         wanted = {(start + timedelta(days=i)).isoformat() for i in range((end - start).days + 1)}
+        missing_days = sorted(wanted - set(days))
         return dataset_response(
             source=SOURCE,
             dataset=dataset,
@@ -183,9 +184,12 @@ class YtbsService:
             unit=unit,
             notes=f"{YTBS_DATA_NOTE} {notes}" if notes else YTBS_DATA_NOTE,
             latest_available_period=days[-1],
-            data_freshness=f"Son senkron: {manifest.get('son_senkron')}",
+            # README enum: YTBS is provisional operational data; "partial" when some
+            # requested days are absent from the store.
+            data_freshness="partial" if missing_days else "provisional",
+            last_synced_at=manifest.get("son_senkron"),
             provisional=True,
-            missing_days=sorted(wanted - set(days)),
+            missing_days=missing_days,
             storage_backend=self.repo.backend,
         )
 

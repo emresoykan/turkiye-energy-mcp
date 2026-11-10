@@ -46,6 +46,8 @@ async def test_installed_capacity_snapshot_by_source(data_dir):
     assert wind["santral_sayisi"] == 420
     assert sum(r["kurulu_guc_mw"] for r in result["data"]) == pytest.approx(127241.2, abs=0.01)
     assert result["metadata"]["provisional"] is True
+    assert result["metadata"]["data_freshness"] == "provisional"
+    assert result["metadata"]["last_synced_at"] == FETCHED.isoformat(timespec="seconds")
 
 
 async def test_hourly_balance_reports_missing_days(data_dir):
@@ -55,6 +57,7 @@ async def test_hourly_balance_reports_missing_days(data_dir):
     assert len(result["data"]) == 24
     assert result["data"][0]["tuketim_mwh"] == pytest.approx(36320.76)
     assert result["metadata"]["missing_days"] == ["2026-10-02"]
+    assert result["metadata"]["data_freshness"] == "partial"
 
 
 async def test_15min_source_filter_accepts_turkish_and_english_names(data_dir):
