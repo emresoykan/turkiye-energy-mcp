@@ -94,6 +94,26 @@ pip install -e '.[dev]'
 pytest
 ```
 
+### Bağımlılık kilidi
+
+`pyproject.toml` yalnız alt sınır + major üst sınır verir (ör. `mcp>=2,<3`;
+`server.py` yalnız 2.x SDK'da bulunan `mcp.server.MCPServer`'ı kullanır).
+Docker imajı, test edilmiş tam sürümleri içeren `constraints.txt` ile kurulur
+(`pip install -c constraints.txt .`), böylece build'ler tekrarlanabilir. Aynı
+sürümleri yerelde kurmak için: `pip install -c constraints.txt -e '.[dev]'`.
+
+Kilidi yenilemek (bağımlılık eklendiğinde veya sürüm yükseltirken):
+
+```bash
+uv pip compile pyproject.toml --python-version 3.12 --python-platform linux \
+  --no-header --no-annotate --upgrade -o constraints.txt
+pip install -c constraints.txt -e '.[dev]' && pytest
+```
+
+Dosyanın başındaki yorum satırlarını koruyun; Python sürümü Dockerfile'daki
+taban imajla (`python:3.12-slim`) aynı olmalıdır. Testler geçmeden yeni kilidi
+commit etmeyin.
+
 ## Çalıştırma
 
 Streamable HTTP:
