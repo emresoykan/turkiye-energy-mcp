@@ -44,6 +44,9 @@ ENERGY_BALANCE = "uretim_ithalat_ihracat_2012-2025.xlsx"
 TRANSMISSION_LINES = "iletim_hat_uzunluk_1979-2025.xls"
 TRANSFORMERS = "trafo_adet_guc_1980-2025.xls"
 MONTHLY = "aylik_uretim_tuketim_2026-09.xlsx"  # 2026 monthly report, Jan-Sep
+EUAS_THERMAL = "euas_termik_santraller_2025.xls"
+EUAS_HYDRO = "euas_hidrolik_santraller_2025_19.xls"
+EUAS_HYDRO_CONTINUED = "euas_hidrolik_santraller_2025_20.xls"
 
 
 def fixture_bytes(name: str) -> bytes:
@@ -118,6 +121,9 @@ def test_teias_capacity_parser():
         (parse_energy_balance, ENERGY_BALANCE),
         (parse_transmission_lines, TRANSMISSION_LINES),
         (parse_transformers, TRANSFORMERS),
+        (parse_euas_thermal_plants, EUAS_THERMAL),
+        (parse_euas_hydro_plants, EUAS_HYDRO),
+        (parse_euas_hydro_plants, EUAS_HYDRO_CONTINUED),
     ],
 )
 def test_real_workbooks_round_trip_through_test_writer(parser, name):
@@ -441,8 +447,27 @@ def test_grid_workbooks_inserted_row_keeps_values(parser, name, row):
     assert_same_records(parser(workbook_bytes(insert_row(fixture_frame(name), row))), expected)
 
 
-def test_euas_thermal_parser():
+# Column captions as printed in row 6 of the real EÜAŞ thermal table.
+THERMAL_CAPTIONS = {
+    2: "SIRA NO",
+    3: "SANTRALIN ADI",
+    4: "YAKIT CİNSİ",
+    5: "BULUNDUĞU İL",
+    16: "KURULU GÜÇ",
+    17: "BRÜT ÜRETİM",
+    18: "PROJE ÜRETİMİ",
+}
+
+
+def thermal_frame() -> pd.DataFrame:
     frame = pd.DataFrame([[None] * 19 for _ in range(12)])
+    for column, caption in THERMAL_CAPTIONS.items():
+        frame.iloc[6, column] = caption
+    return frame
+
+
+def test_euas_thermal_parser():
+    frame = thermal_frame()
     frame.iloc[11, 2] = 1
     frame.iloc[11, 3] = "Afşin-Elbistan B"
     frame.iloc[11, 4] = "Linyit"
@@ -459,7 +484,7 @@ def test_euas_thermal_parser():
 
 
 def test_euas_thermal_parser_nulls_implausible_project_generation():
-    frame = pd.DataFrame([[None] * 19 for _ in range(12)])
+    frame = thermal_frame()
     frame.iloc[11, 2] = 1
     frame.iloc[11, 3] = "Soma A"
     frame.iloc[11, 4] = "Linyit"
@@ -481,6 +506,7 @@ def test_euas_thermal_parser_nulls_implausible_project_generation():
 
 def test_euas_hydro_parser():
     frame = pd.DataFrame([[None] * 21 for _ in range(13)])
+    frame.iloc[7, 2] = "SIRA NO"
     frame.iloc[7, 4] = "SANTRALIN ADI"
     frame.iloc[7, 6] = "BULUNDUĞU İL"
     frame.iloc[7, 17] = "KURULU GÜÇ"
@@ -509,7 +535,9 @@ def test_euas_hydro_parser():
 
 def test_euas_hydro_parser_nulls_implausible_project_generation():
     frame = pd.DataFrame([[None] * 21 for _ in range(14)])
+    frame.iloc[7, 2] = "SIRA NO"
     frame.iloc[7, 4] = "SANTRALIN ADI"
+    frame.iloc[7, 6] = "BULUNDUĞU İL"
     frame.iloc[7, 17] = "KURULU GÜÇ"
     frame.iloc[7, 18] = "BRÜT ÜRETİM"
     frame.iloc[8, 19] = "ORTALAMA"
@@ -539,6 +567,69 @@ def test_euas_hydro_parser_nulls_implausible_project_generation():
     assert records["KEBAN"]["gross_generation_gwh"] == 5536.518
     assert records["KEBAN"]["average_project_generation_gwh"] is None
     assert records["KEBAN"]["firm_project_generation_gwh"] is None
+
+
+def test_euas_plant_tables_real_values():
+    thermal = {row["name"]: row for row in parse_euas_thermal_plants(fixture_bytes(EUAS_THERMAL))}
+    assert len(thermal) == 11
+    assert thermal["Afşin-Elbistan B"]["installed_capacity_mw"] == 1440.0
+    assert thermal["Afşin-Elbistan B"]["gross_generation_gwh"] == 530.308
+    assert thermal["Afşin-Elbistan B"]["source"] == "Linyit"
+    hydro = {row["name"]: row for row in parse_euas_hydro_plants(fixture_bytes(EUAS_HYDRO))}
+    assert len(hydro) == 39
+    assert hydro["YUSUFELİ"]["installed_capacity_mw"] == 548.1
+    assert hydro["YUSUFELİ"]["gross_generation_gwh"] == 1720.856268
+    assert hydro["YUSUFELİ"]["province"] == "Artvin"
+
+
+@pytest.mark.parametrize("column", [0, 4, 10, 16, 18])
+def test_euas_thermal_inserted_column_raises(column):
+    # 4: new column before the fuel type; 10/16: inside the unit block, which
+    # shifts the MW/GWh columns; 18: before project generation.
+    assert_layout_error(
+        parse_euas_thermal_plants, insert_column(fixture_frame(EUAS_THERMAL), column)
+    )
+
+
+@pytest.mark.parametrize("row", [3, 9, 20])
+def test_euas_thermal_inserted_row_keeps_values(row):
+    expected = parse_euas_thermal_plants(fixture_bytes(EUAS_THERMAL))
+    shifted = insert_row(fixture_frame(EUAS_THERMAL), row)
+    assert parse_euas_thermal_plants(workbook_bytes(shifted)) == expected
+
+
+@pytest.mark.parametrize("name", [EUAS_HYDRO, EUAS_HYDRO_CONTINUED])
+def test_euas_hydro_locates_columns_by_label(name):
+    expected = parse_euas_hydro_plants(fixture_bytes(name))
+    for column in (0, 5, 17):
+        shifted = insert_column(fixture_frame(name), column)
+        assert parse_euas_hydro_plants(workbook_bytes(shifted)) == expected
+    shifted = insert_row(fixture_frame(name), 12)
+    assert parse_euas_hydro_plants(workbook_bytes(shifted)) == expected
+
+
+def blank_captions(frame: pd.DataFrame, *captions: str) -> pd.DataFrame:
+    # Real captions carry stray leading spaces ("    KURULU GÜÇ", " FİRM").
+    return frame.mask(frame.map(lambda value: isinstance(value, str) and value.strip() in captions))
+
+
+def test_euas_hydro_missing_capacity_header_raises():
+    frame = blank_captions(fixture_frame(EUAS_HYDRO), "KURULU GÜÇ", "INSTALLED CAP.")
+    error = assert_layout_error(parse_euas_hydro_plants, frame)
+    assert error.details["expected_label"] == "KURULU GÜÇ"
+
+
+def test_euas_hydro_without_project_headers_reads_no_project_values():
+    # No positional fallback to columns 19/20 when the captions are gone.
+    expected = parse_euas_hydro_plants(fixture_bytes(EUAS_HYDRO))
+    frame = blank_captions(
+        fixture_frame(EUAS_HYDRO), "ORTALAMA", "AVERAGE", "GÜVENİLİR", "FİRM"
+    )
+    records = parse_euas_hydro_plants(workbook_bytes(frame))
+    assert [row["installed_capacity_mw"] for row in records] == [
+        row["installed_capacity_mw"] for row in expected
+    ]
+    assert all(row["_project_generation_drop_reasons"] == [] for row in records)
 
 
 def test_year_parser_ignores_footnote_containing_a_year():

@@ -32,6 +32,11 @@ def workbook(name: str, content: bytes) -> Workbook:
 @pytest.mark.asyncio
 async def test_power_plant_response_reports_dropped_project_rows():
     thermal = pd.DataFrame([[None] * 21 for _ in range(13)])
+    # Captions as printed in the real EÜAŞ thermal / hydro tables.
+    thermal.iloc[6, [2, 3, 4, 5, 16, 17, 18]] = [
+        "SIRA NO", "SANTRALIN ADI", "YAKIT CİNSİ", "BULUNDUĞU İL",
+        "KURULU GÜÇ", "BRÜT ÜRETİM", "PROJE ÜRETİMİ",
+    ]
     thermal.iloc[11, 2] = 1
     thermal.iloc[11, 3] = "Soma A"
     thermal.iloc[11, 4] = "Linyit"
@@ -47,6 +52,7 @@ async def test_power_plant_response_reports_dropped_project_rows():
     thermal.iloc[12, 17] = 2834
     thermal.iloc[12, 18] = 9360
     hydro = pd.DataFrame([[None] * 21 for _ in range(13)])
+    hydro.iloc[7, 2] = "SIRA NO"
     hydro.iloc[7, 4] = "SANTRALIN ADI"
     hydro.iloc[7, 6] = "BULUNDUĞU İL"
     hydro.iloc[7, 17] = "KURULU GÜÇ"

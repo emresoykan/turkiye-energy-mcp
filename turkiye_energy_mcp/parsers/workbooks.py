@@ -628,14 +628,24 @@ def parse_euas_generation_by_source(content: bytes) -> list[dict[str, Any]]:
     return result
 
 
-def _find_column(df: pd.DataFrame, *needles: str, default: int | None = None) -> int | None:
+def _find_column(df: pd.DataFrame, *needles: str) -> int | None:
     limit = min(12, len(df))
     for row_index in range(limit):
         for col_index, value in enumerate(df.iloc[row_index].tolist()):
             text = normalize_key(str(value or ""))
             if text and any(needle in text for needle in needles):
                 return col_index
-    return default
+    return None
+
+
+_THERMAL_PLANT_COLUMNS: dict[int, tuple[str, ...]] = {
+    3: ("santralin adi", "name of power plant"),
+    4: ("yakit", "fuel"),
+    5: ("bulundugu il", "location"),
+    16: ("kurulu guc", "installed cap"),
+    17: ("brut uretim", "gross generation"),
+    18: ("proje uretim", "project"),
+}
 
 
 def parse_euas_thermal_plants(
@@ -646,9 +656,14 @@ def parse_euas_thermal_plants(
         "EUAS thermal raw dataframe first 15 rows (untransformed):\n%s",
         df.iloc[:15, :].to_string(index=True, header=True),
     )
+    table = "EÜAŞ termik santralları"
+    header_row, _ = _find_label(
+        df, table, "SIRA NO", lambda text: text.startswith("sira no"), column=2
+    )
+    _check_column_headers(df, table, header_row, _THERMAL_PLANT_COLUMNS)
     records: list[dict[str, Any]] = []
     current_source: str | None = None
-    for _, row in df.iterrows():
+    for _, row in df.iloc[header_row + 1 :].iterrows():
         if len(row) <= 17 or number(_cell(row, 2), 0) is None:
             continue
         name = clean_text(_cell(row, 3))
@@ -713,29 +728,42 @@ def parse_euas_hydro_plants(
         "EUAS hydro raw dataframe first 15 rows (untransformed):\n%s",
         df.iloc[:15, :].to_string(index=True, header=True),
     )
-    name_col = _find_column(df, "santralin adi", "name of power plant", default=4) or 4
-    province_col = _find_column(df, "bulundugu il", "location", default=6) or 6
-    capacity_col = _find_column(df, "kurulu guc", "installed cap", default=17) or 17
-    gross_col = _find_column(df, "brut uretim", "gross generation", default=18) or 18
-    # Prefer explicit average/firm headers when present; fall back to classic layout.
-    average_col = _find_column(df, "ortalama", "average", default=19)
-    firm_col = _find_column(df, "guvenilir", "firm", default=20)
-    if average_col is None:
-        average_col = 19
-    if firm_col is None:
-        firm_col = 20
+    table = "EÜAŞ hidrolik santralleri"
+
+    # Columns are located by their header text; a missing header raises instead
+    # of falling back to a fixed column that may now hold another field.
+    def column(expected: str, *needles: str) -> int:
+        found = _find_column(df, *needles)
+        if found is None:
+            raise _layout_error(
+                table, f"'{expected}' sütunu bulunamadı", expected_label=expected
+            )
+        return found
+
+    order_col = column("SIRA NO", "sira no", "order")
+    name_col = column("SANTRALIN ADI", "santralin adi", "name of power plant")
+    province_col = column("BULUNDUĞU İL", "bulundugu il", "location")
+    capacity_col = column("KURULU GÜÇ", "kurulu guc", "installed cap")
+    gross_col = column("BRÜT ÜRETİM", "brut uretim", "gross generation")
+    # Average/firm project generation is never published as mapped (see below);
+    # without its headers it is treated as absent rather than read from 19/20.
+    average_col = _find_column(df, "ortalama", "average")
+    firm_col = _find_column(df, "guvenilir", "firm")
 
     records: list[dict[str, Any]] = []
     for _, row in df.iterrows():
-        if len(row) <= max(capacity_col, gross_col, name_col) or number(_cell(row, 2), 0) is None:
+        if (
+            len(row) <= max(capacity_col, gross_col, name_col)
+            or number(_cell(row, order_col), 0) is None
+        ):
             continue
         name = clean_text(_cell(row, name_col))
         if not name:
             continue
         capacity_mw = number(_cell(row, capacity_col))
         gross_generation_gwh = number(_cell(row, gross_col))
-        average_raw = number(_cell(row, average_col)) if average_col < len(row) else None
-        firm_raw = number(_cell(row, firm_col)) if firm_col < len(row) else None
+        average_raw = number(_cell(row, average_col)) if average_col is not None else None
+        firm_raw = number(_cell(row, firm_col)) if firm_col is not None else None
         (
             average_gwh,
             firm_gwh,
