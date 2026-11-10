@@ -280,7 +280,8 @@ async def ytbs_get_load_generation_15min(
 ) -> dict[str, Any]:
     """TEİAŞ YTBS 15 dakikalık anlık yük (MW) ve 18 kaynağa göre üretim (MW); lisanssız dahil.
 
-    En fazla 7 gün. sources örnekleri: rüzgar, güneş, doğalgaz, barajlı, ithal kömür.
+    En fazla 7 gün. sources örnekleri: rüzgar, güneş, doğalgaz, barajlı, ithal kömür;
+    bilinmeyen ad (ör. "hydro") geçerli adları listeleyen INVALID_PARAMETER döndürür.
     yuk_mw anlık talep değeridir; enerji (MWh) için ytbs_get_hourly_balance kullanın.
     """
     return await _safe(ytbs.get_load_generation_15min(start_date, end_date, sources))
@@ -301,7 +302,8 @@ async def ytbs_get_daily_generation(
     source: str | None = None,
 ) -> dict[str, Any]:
     """Günlük üretim (MWh), breakdown='kaynak' veya 'kurulus' (EÜAŞ, lisanssız, serbest
-    üretim vb.). En fazla 366 gün; source yalnız kaynak kırılımında filtreler."""
+    üretim vb.). En fazla 366 gün; source yalnız kaynak kırılımında filtreler (bilinmeyen
+    kaynak adı INVALID_PARAMETER döndürür)."""
     return await _safe(ytbs.get_daily_generation(start_date, end_date, breakdown, source))
 
 

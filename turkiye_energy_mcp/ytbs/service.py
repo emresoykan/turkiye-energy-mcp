@@ -47,6 +47,34 @@ ENGLISH_SOURCES = {
     "dam": "barajli",
     "nuclear": "nukleer",
 }
+# YTBS kaynak kodları (sayfadaki santralKaynakListesi). Geçerli adlar bu liste ile verideki
+# kodların birleşimidir; YTBS yeni kaynak eklerse veriden otomatik tanınır.
+SOURCE_CODES = (
+    "nukleer",
+    "linyit",
+    "taskomur",
+    "asfaltitkomur",
+    "ithalkomur",
+    "fueloil",
+    "motorin",
+    "nafta",
+    "lpg",
+    "dogalgaz",
+    "lng",
+    "atikisi",
+    "jeotermal",
+    "biyokutle",
+    "barajli",
+    "akarsu",
+    "ruzgar",
+    "gunes",
+)
+AVAILABLE_CAPACITY_EXTRA_ITEMS = (
+    "toplam",
+    "taleptahmin",
+    "emreamadelikorani",
+    "arzguvenligiorani",
+)
 SERIES_FORMAT = "Sayfaya gömülü JSON (ytbs-sync CSV deposu)"
 REPORT_FORMAT = "Günlük XLSX rapor (ytbs-sync CSV deposu)"
 STORE_NOTE = (
@@ -76,6 +104,31 @@ def _typed(row: dict[str, str]) -> dict[str, Any]:
 def _source_key(value: str) -> str:
     key = source_code(value)
     return ENGLISH_SOURCES.get(value.strip().lower(), ENGLISH_SOURCES.get(key, key))
+
+
+def _resolve_names(
+    names: list[str], valid: set[str], parameter: str
+) -> set[str]:
+    """Kullanıcı adlarını kodlara çevirir; bilinmeyen ad sessizce düşürülmez."""
+    resolved = {name: _source_key(name) for name in names}
+    unknown = [name for name, key in resolved.items() if key not in valid]
+    if unknown:
+        raise EnergyDataError(
+            ErrorCode.INVALID_PARAMETER,
+            f"Bilinmeyen {parameter} adı: {', '.join(unknown)}. Geçerli adlar: "
+            f"{', '.join(sorted(valid))}. Türkçe yazım (rüzgâr, doğal gaz) ve "
+            "details.english_aliases'taki İngilizce adlar da kabul edilir.",
+            source=SOURCE,
+            details={
+                "parameter": parameter,
+                "unknown": unknown,
+                "valid": sorted(valid),
+                "english_aliases": {
+                    en: tr for en, tr in sorted(ENGLISH_SOURCES.items()) if tr in valid
+                },
+            },
+        )
+    return set(resolved.values())
 
 
 def _date_range(start_date: str, end_date: str, max_days: int) -> tuple[date, date]:
@@ -143,7 +196,9 @@ class YtbsService:
         rows = [_typed(r) for r in await self.repo.read(SERIES_TABLE, start, end)]
         if sources:
             keep = {"tarih", "zaman", "yuk_mw", "toplam_uretim_mw", "cekim_zamani"}
-            keep |= {f"{_source_key(s)}_mw" for s in sources}
+            in_data = {k.removesuffix("_mw") for r in rows for k in r if k.endswith("_mw")}
+            valid = (set(SOURCE_CODES) | in_data) - {"yuk", "toplam_uretim"}
+            keep |= {f"{code}_mw" for code in _resolve_names(sources, valid, "sources")}
             rows = [{k: v for k, v in r.items() if k in keep} for r in rows]
         return await self._response(
             dataset="ytbs_15dk_yuk_uretim",
@@ -188,7 +243,8 @@ class YtbsService:
             )
         rows = [_typed(r) for r in await self.repo.read(f"gunluk_uretim_{breakdown}", start, end)]
         if source and breakdown == "kaynak":
-            key = _source_key(source)
+            valid = set(SOURCE_CODES) | {r["kaynak"] for r in rows}
+            (key,) = _resolve_names([source], valid, "source")
             rows = [r for r in rows if r["kaynak"] == key]
         return await self._response(
             dataset=f"ytbs_gunluk_uretim_{breakdown}",
@@ -269,7 +325,12 @@ class YtbsService:
         start, end = _date_range(start_date, end_date, max_days=31)
         rows = [_typed(r) for r in await self.repo.read("emre_amade", start, end)]
         if items:
-            keys = {_source_key(i) for i in items}
+            valid = (
+                set(SOURCE_CODES)
+                | set(AVAILABLE_CAPACITY_EXTRA_ITEMS)
+                | {r["kalem"] for r in rows}
+            )
+            keys = _resolve_names(items, valid, "items")
             rows = [r for r in rows if r["kalem"] in keys]
         return await self._response(
             dataset="ytbs_emre_amade_kapasite",
