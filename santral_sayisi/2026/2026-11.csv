@@ -339,428 +339,513 @@ tarih,kurulus,kaynak,santral_sayisi,cekim_zamani
 2026-11-04,Yap İşlet Devret Santralları,akarsu,1.0,2026-11-10T13:31:59+03:00
 2026-11-04,Yap İşlet Devret Santralları,gunes,0.0,2026-11-10T13:31:59+03:00
 2026-11-04,Yap İşlet Devret Santralları,ruzgar,0.0,2026-11-10T13:31:59+03:00
-2026-11-05,EÜAŞ Santralları,dogalgaz,5.0,2026-11-10T13:32:13+03:00
-2026-11-05,EÜAŞ Santralları,lng,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,EÜAŞ Santralları,linyit,3.0,2026-11-10T13:32:13+03:00
-2026-11-05,EÜAŞ Santralları,taskomur,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,EÜAŞ Santralları,asfaltitkomur,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,EÜAŞ Santralları,ithalkomur,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,EÜAŞ Santralları,fueloil,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,EÜAŞ Santralları,motorin,1.0,2026-11-10T13:32:13+03:00
-2026-11-05,EÜAŞ Santralları,nafta,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,EÜAŞ Santralları,lpg,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,EÜAŞ Santralları,atikisi,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,EÜAŞ Santralları,biyokutle,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,EÜAŞ Santralları,jeotermal,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,EÜAŞ Santralları,barajli,38.0,2026-11-10T13:32:13+03:00
-2026-11-05,EÜAŞ Santralları,akarsu,7.0,2026-11-10T13:32:13+03:00
-2026-11-05,EÜAŞ Santralları,gunes,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,EÜAŞ Santralları,ruzgar,2.0,2026-11-10T13:32:13+03:00
-2026-11-05,İşletme Hakkı Devredilen Santrallar,dogalgaz,1.0,2026-11-10T13:32:13+03:00
-2026-11-05,İşletme Hakkı Devredilen Santrallar,lng,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,İşletme Hakkı Devredilen Santrallar,linyit,1.0,2026-11-10T13:32:13+03:00
-2026-11-05,İşletme Hakkı Devredilen Santrallar,taskomur,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,İşletme Hakkı Devredilen Santrallar,asfaltitkomur,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,İşletme Hakkı Devredilen Santrallar,ithalkomur,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,İşletme Hakkı Devredilen Santrallar,fueloil,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,İşletme Hakkı Devredilen Santrallar,motorin,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,İşletme Hakkı Devredilen Santrallar,nafta,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,İşletme Hakkı Devredilen Santrallar,lpg,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,İşletme Hakkı Devredilen Santrallar,atikisi,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,İşletme Hakkı Devredilen Santrallar,biyokutle,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,İşletme Hakkı Devredilen Santrallar,jeotermal,1.0,2026-11-10T13:32:13+03:00
-2026-11-05,İşletme Hakkı Devredilen Santrallar,barajli,25.0,2026-11-10T13:32:13+03:00
-2026-11-05,İşletme Hakkı Devredilen Santrallar,akarsu,66.0,2026-11-10T13:32:13+03:00
-2026-11-05,İşletme Hakkı Devredilen Santrallar,gunes,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,İşletme Hakkı Devredilen Santrallar,ruzgar,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,Lisanssız Santrallar,dogalgaz,107.0,2026-11-10T13:32:13+03:00
-2026-11-05,Lisanssız Santrallar,lng,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,Lisanssız Santrallar,linyit,2.0,2026-11-10T13:32:13+03:00
-2026-11-05,Lisanssız Santrallar,taskomur,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,Lisanssız Santrallar,asfaltitkomur,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,Lisanssız Santrallar,ithalkomur,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,Lisanssız Santrallar,fueloil,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,Lisanssız Santrallar,motorin,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,Lisanssız Santrallar,nafta,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,Lisanssız Santrallar,lpg,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,Lisanssız Santrallar,atikisi,16.0,2026-11-10T13:32:13+03:00
-2026-11-05,Lisanssız Santrallar,biyokutle,53.0,2026-11-10T13:32:13+03:00
-2026-11-05,Lisanssız Santrallar,jeotermal,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,Lisanssız Santrallar,barajli,1.0,2026-11-10T13:32:13+03:00
-2026-11-05,Lisanssız Santrallar,akarsu,27.0,2026-11-10T13:32:13+03:00
-2026-11-05,Lisanssız Santrallar,gunes,42900.0,2026-11-10T13:32:13+03:00
-2026-11-05,Lisanssız Santrallar,ruzgar,109.0,2026-11-10T13:32:13+03:00
-2026-11-05,Serbest Üretim Şirketi Santralları,dogalgaz,236.0,2026-11-10T13:32:13+03:00
-2026-11-05,Serbest Üretim Şirketi Santralları,lng,1.0,2026-11-10T13:32:13+03:00
-2026-11-05,Serbest Üretim Şirketi Santralları,linyit,42.0,2026-11-10T13:32:13+03:00
-2026-11-05,Serbest Üretim Şirketi Santralları,taskomur,4.0,2026-11-10T13:32:13+03:00
-2026-11-05,Serbest Üretim Şirketi Santralları,asfaltitkomur,1.0,2026-11-10T13:32:13+03:00
-2026-11-05,Serbest Üretim Şirketi Santralları,ithalkomur,16.0,2026-11-10T13:32:13+03:00
-2026-11-05,Serbest Üretim Şirketi Santralları,fueloil,7.0,2026-11-10T13:32:13+03:00
-2026-11-05,Serbest Üretim Şirketi Santralları,motorin,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,Serbest Üretim Şirketi Santralları,nafta,1.0,2026-11-10T13:32:13+03:00
-2026-11-05,Serbest Üretim Şirketi Santralları,lpg,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,Serbest Üretim Şirketi Santralları,atikisi,20.0,2026-11-10T13:32:13+03:00
-2026-11-05,Serbest Üretim Şirketi Santralları,biyokutle,309.0,2026-11-10T13:32:13+03:00
-2026-11-05,Serbest Üretim Şirketi Santralları,jeotermal,67.0,2026-11-10T13:32:13+03:00
-2026-11-05,Serbest Üretim Şirketi Santralları,barajli,84.0,2026-11-10T13:32:13+03:00
-2026-11-05,Serbest Üretim Şirketi Santralları,akarsu,528.0,2026-11-10T13:32:13+03:00
-2026-11-05,Serbest Üretim Şirketi Santralları,gunes,72.0,2026-11-10T13:32:13+03:00
-2026-11-05,Serbest Üretim Şirketi Santralları,ruzgar,311.0,2026-11-10T13:32:13+03:00
-2026-11-05,Yap İşlet Devret Santralları,dogalgaz,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,Yap İşlet Devret Santralları,lng,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,Yap İşlet Devret Santralları,linyit,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,Yap İşlet Devret Santralları,taskomur,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,Yap İşlet Devret Santralları,asfaltitkomur,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,Yap İşlet Devret Santralları,ithalkomur,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,Yap İşlet Devret Santralları,fueloil,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,Yap İşlet Devret Santralları,motorin,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,Yap İşlet Devret Santralları,nafta,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,Yap İşlet Devret Santralları,lpg,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,Yap İşlet Devret Santralları,atikisi,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,Yap İşlet Devret Santralları,biyokutle,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,Yap İşlet Devret Santralları,jeotermal,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,Yap İşlet Devret Santralları,barajli,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,Yap İşlet Devret Santralları,akarsu,1.0,2026-11-10T13:32:13+03:00
-2026-11-05,Yap İşlet Devret Santralları,gunes,0.0,2026-11-10T13:32:13+03:00
-2026-11-05,Yap İşlet Devret Santralları,ruzgar,0.0,2026-11-10T13:32:13+03:00
-2026-11-06,EÜAŞ Santralları,dogalgaz,5.0,2026-11-10T13:32:32+03:00
-2026-11-06,EÜAŞ Santralları,lng,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,EÜAŞ Santralları,linyit,3.0,2026-11-10T13:32:32+03:00
-2026-11-06,EÜAŞ Santralları,taskomur,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,EÜAŞ Santralları,asfaltitkomur,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,EÜAŞ Santralları,ithalkomur,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,EÜAŞ Santralları,fueloil,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,EÜAŞ Santralları,motorin,1.0,2026-11-10T13:32:32+03:00
-2026-11-06,EÜAŞ Santralları,nafta,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,EÜAŞ Santralları,lpg,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,EÜAŞ Santralları,atikisi,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,EÜAŞ Santralları,biyokutle,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,EÜAŞ Santralları,jeotermal,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,EÜAŞ Santralları,barajli,38.0,2026-11-10T13:32:32+03:00
-2026-11-06,EÜAŞ Santralları,akarsu,7.0,2026-11-10T13:32:32+03:00
-2026-11-06,EÜAŞ Santralları,gunes,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,EÜAŞ Santralları,ruzgar,2.0,2026-11-10T13:32:32+03:00
-2026-11-06,İşletme Hakkı Devredilen Santrallar,dogalgaz,1.0,2026-11-10T13:32:32+03:00
-2026-11-06,İşletme Hakkı Devredilen Santrallar,lng,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,İşletme Hakkı Devredilen Santrallar,linyit,1.0,2026-11-10T13:32:32+03:00
-2026-11-06,İşletme Hakkı Devredilen Santrallar,taskomur,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,İşletme Hakkı Devredilen Santrallar,asfaltitkomur,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,İşletme Hakkı Devredilen Santrallar,ithalkomur,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,İşletme Hakkı Devredilen Santrallar,fueloil,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,İşletme Hakkı Devredilen Santrallar,motorin,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,İşletme Hakkı Devredilen Santrallar,nafta,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,İşletme Hakkı Devredilen Santrallar,lpg,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,İşletme Hakkı Devredilen Santrallar,atikisi,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,İşletme Hakkı Devredilen Santrallar,biyokutle,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,İşletme Hakkı Devredilen Santrallar,jeotermal,1.0,2026-11-10T13:32:32+03:00
-2026-11-06,İşletme Hakkı Devredilen Santrallar,barajli,25.0,2026-11-10T13:32:32+03:00
-2026-11-06,İşletme Hakkı Devredilen Santrallar,akarsu,66.0,2026-11-10T13:32:32+03:00
-2026-11-06,İşletme Hakkı Devredilen Santrallar,gunes,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,İşletme Hakkı Devredilen Santrallar,ruzgar,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,Lisanssız Santrallar,dogalgaz,107.0,2026-11-10T13:32:32+03:00
-2026-11-06,Lisanssız Santrallar,lng,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,Lisanssız Santrallar,linyit,2.0,2026-11-10T13:32:32+03:00
-2026-11-06,Lisanssız Santrallar,taskomur,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,Lisanssız Santrallar,asfaltitkomur,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,Lisanssız Santrallar,ithalkomur,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,Lisanssız Santrallar,fueloil,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,Lisanssız Santrallar,motorin,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,Lisanssız Santrallar,nafta,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,Lisanssız Santrallar,lpg,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,Lisanssız Santrallar,atikisi,16.0,2026-11-10T13:32:32+03:00
-2026-11-06,Lisanssız Santrallar,biyokutle,53.0,2026-11-10T13:32:32+03:00
-2026-11-06,Lisanssız Santrallar,jeotermal,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,Lisanssız Santrallar,barajli,1.0,2026-11-10T13:32:32+03:00
-2026-11-06,Lisanssız Santrallar,akarsu,27.0,2026-11-10T13:32:32+03:00
-2026-11-06,Lisanssız Santrallar,gunes,42905.0,2026-11-10T13:32:32+03:00
-2026-11-06,Lisanssız Santrallar,ruzgar,109.0,2026-11-10T13:32:32+03:00
-2026-11-06,Serbest Üretim Şirketi Santralları,dogalgaz,236.0,2026-11-10T13:32:32+03:00
-2026-11-06,Serbest Üretim Şirketi Santralları,lng,1.0,2026-11-10T13:32:32+03:00
-2026-11-06,Serbest Üretim Şirketi Santralları,linyit,42.0,2026-11-10T13:32:32+03:00
-2026-11-06,Serbest Üretim Şirketi Santralları,taskomur,4.0,2026-11-10T13:32:32+03:00
-2026-11-06,Serbest Üretim Şirketi Santralları,asfaltitkomur,1.0,2026-11-10T13:32:32+03:00
-2026-11-06,Serbest Üretim Şirketi Santralları,ithalkomur,16.0,2026-11-10T13:32:32+03:00
-2026-11-06,Serbest Üretim Şirketi Santralları,fueloil,7.0,2026-11-10T13:32:32+03:00
-2026-11-06,Serbest Üretim Şirketi Santralları,motorin,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,Serbest Üretim Şirketi Santralları,nafta,1.0,2026-11-10T13:32:32+03:00
-2026-11-06,Serbest Üretim Şirketi Santralları,lpg,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,Serbest Üretim Şirketi Santralları,atikisi,20.0,2026-11-10T13:32:32+03:00
-2026-11-06,Serbest Üretim Şirketi Santralları,biyokutle,309.0,2026-11-10T13:32:32+03:00
-2026-11-06,Serbest Üretim Şirketi Santralları,jeotermal,67.0,2026-11-10T13:32:32+03:00
-2026-11-06,Serbest Üretim Şirketi Santralları,barajli,84.0,2026-11-10T13:32:32+03:00
-2026-11-06,Serbest Üretim Şirketi Santralları,akarsu,528.0,2026-11-10T13:32:32+03:00
-2026-11-06,Serbest Üretim Şirketi Santralları,gunes,72.0,2026-11-10T13:32:32+03:00
-2026-11-06,Serbest Üretim Şirketi Santralları,ruzgar,311.0,2026-11-10T13:32:32+03:00
-2026-11-06,Yap İşlet Devret Santralları,dogalgaz,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,Yap İşlet Devret Santralları,lng,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,Yap İşlet Devret Santralları,linyit,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,Yap İşlet Devret Santralları,taskomur,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,Yap İşlet Devret Santralları,asfaltitkomur,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,Yap İşlet Devret Santralları,ithalkomur,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,Yap İşlet Devret Santralları,fueloil,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,Yap İşlet Devret Santralları,motorin,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,Yap İşlet Devret Santralları,nafta,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,Yap İşlet Devret Santralları,lpg,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,Yap İşlet Devret Santralları,atikisi,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,Yap İşlet Devret Santralları,biyokutle,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,Yap İşlet Devret Santralları,jeotermal,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,Yap İşlet Devret Santralları,barajli,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,Yap İşlet Devret Santralları,akarsu,1.0,2026-11-10T13:32:32+03:00
-2026-11-06,Yap İşlet Devret Santralları,gunes,0.0,2026-11-10T13:32:32+03:00
-2026-11-06,Yap İşlet Devret Santralları,ruzgar,0.0,2026-11-10T13:32:32+03:00
-2026-11-07,EÜAŞ Santralları,dogalgaz,5.0,2026-11-10T13:33:06+03:00
-2026-11-07,EÜAŞ Santralları,lng,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,EÜAŞ Santralları,linyit,3.0,2026-11-10T13:33:06+03:00
-2026-11-07,EÜAŞ Santralları,taskomur,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,EÜAŞ Santralları,asfaltitkomur,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,EÜAŞ Santralları,ithalkomur,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,EÜAŞ Santralları,fueloil,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,EÜAŞ Santralları,motorin,1.0,2026-11-10T13:33:06+03:00
-2026-11-07,EÜAŞ Santralları,nafta,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,EÜAŞ Santralları,lpg,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,EÜAŞ Santralları,atikisi,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,EÜAŞ Santralları,biyokutle,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,EÜAŞ Santralları,jeotermal,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,EÜAŞ Santralları,barajli,38.0,2026-11-10T13:33:06+03:00
-2026-11-07,EÜAŞ Santralları,akarsu,7.0,2026-11-10T13:33:06+03:00
-2026-11-07,EÜAŞ Santralları,gunes,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,EÜAŞ Santralları,ruzgar,2.0,2026-11-10T13:33:06+03:00
-2026-11-07,İşletme Hakkı Devredilen Santrallar,dogalgaz,1.0,2026-11-10T13:33:06+03:00
-2026-11-07,İşletme Hakkı Devredilen Santrallar,lng,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,İşletme Hakkı Devredilen Santrallar,linyit,1.0,2026-11-10T13:33:06+03:00
-2026-11-07,İşletme Hakkı Devredilen Santrallar,taskomur,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,İşletme Hakkı Devredilen Santrallar,asfaltitkomur,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,İşletme Hakkı Devredilen Santrallar,ithalkomur,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,İşletme Hakkı Devredilen Santrallar,fueloil,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,İşletme Hakkı Devredilen Santrallar,motorin,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,İşletme Hakkı Devredilen Santrallar,nafta,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,İşletme Hakkı Devredilen Santrallar,lpg,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,İşletme Hakkı Devredilen Santrallar,atikisi,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,İşletme Hakkı Devredilen Santrallar,biyokutle,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,İşletme Hakkı Devredilen Santrallar,jeotermal,1.0,2026-11-10T13:33:06+03:00
-2026-11-07,İşletme Hakkı Devredilen Santrallar,barajli,25.0,2026-11-10T13:33:06+03:00
-2026-11-07,İşletme Hakkı Devredilen Santrallar,akarsu,66.0,2026-11-10T13:33:06+03:00
-2026-11-07,İşletme Hakkı Devredilen Santrallar,gunes,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,İşletme Hakkı Devredilen Santrallar,ruzgar,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,Lisanssız Santrallar,dogalgaz,107.0,2026-11-10T13:33:06+03:00
-2026-11-07,Lisanssız Santrallar,lng,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,Lisanssız Santrallar,linyit,2.0,2026-11-10T13:33:06+03:00
-2026-11-07,Lisanssız Santrallar,taskomur,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,Lisanssız Santrallar,asfaltitkomur,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,Lisanssız Santrallar,ithalkomur,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,Lisanssız Santrallar,fueloil,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,Lisanssız Santrallar,motorin,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,Lisanssız Santrallar,nafta,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,Lisanssız Santrallar,lpg,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,Lisanssız Santrallar,atikisi,16.0,2026-11-10T13:33:06+03:00
-2026-11-07,Lisanssız Santrallar,biyokutle,53.0,2026-11-10T13:33:06+03:00
-2026-11-07,Lisanssız Santrallar,jeotermal,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,Lisanssız Santrallar,barajli,1.0,2026-11-10T13:33:06+03:00
-2026-11-07,Lisanssız Santrallar,akarsu,27.0,2026-11-10T13:33:06+03:00
-2026-11-07,Lisanssız Santrallar,gunes,42905.0,2026-11-10T13:33:06+03:00
-2026-11-07,Lisanssız Santrallar,ruzgar,109.0,2026-11-10T13:33:06+03:00
-2026-11-07,Serbest Üretim Şirketi Santralları,dogalgaz,236.0,2026-11-10T13:33:06+03:00
-2026-11-07,Serbest Üretim Şirketi Santralları,lng,1.0,2026-11-10T13:33:06+03:00
-2026-11-07,Serbest Üretim Şirketi Santralları,linyit,42.0,2026-11-10T13:33:06+03:00
-2026-11-07,Serbest Üretim Şirketi Santralları,taskomur,4.0,2026-11-10T13:33:06+03:00
-2026-11-07,Serbest Üretim Şirketi Santralları,asfaltitkomur,1.0,2026-11-10T13:33:06+03:00
-2026-11-07,Serbest Üretim Şirketi Santralları,ithalkomur,16.0,2026-11-10T13:33:06+03:00
-2026-11-07,Serbest Üretim Şirketi Santralları,fueloil,7.0,2026-11-10T13:33:06+03:00
-2026-11-07,Serbest Üretim Şirketi Santralları,motorin,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,Serbest Üretim Şirketi Santralları,nafta,1.0,2026-11-10T13:33:06+03:00
-2026-11-07,Serbest Üretim Şirketi Santralları,lpg,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,Serbest Üretim Şirketi Santralları,atikisi,20.0,2026-11-10T13:33:06+03:00
-2026-11-07,Serbest Üretim Şirketi Santralları,biyokutle,309.0,2026-11-10T13:33:06+03:00
-2026-11-07,Serbest Üretim Şirketi Santralları,jeotermal,67.0,2026-11-10T13:33:06+03:00
-2026-11-07,Serbest Üretim Şirketi Santralları,barajli,84.0,2026-11-10T13:33:06+03:00
-2026-11-07,Serbest Üretim Şirketi Santralları,akarsu,528.0,2026-11-10T13:33:06+03:00
-2026-11-07,Serbest Üretim Şirketi Santralları,gunes,72.0,2026-11-10T13:33:06+03:00
-2026-11-07,Serbest Üretim Şirketi Santralları,ruzgar,311.0,2026-11-10T13:33:06+03:00
-2026-11-07,Yap İşlet Devret Santralları,dogalgaz,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,Yap İşlet Devret Santralları,lng,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,Yap İşlet Devret Santralları,linyit,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,Yap İşlet Devret Santralları,taskomur,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,Yap İşlet Devret Santralları,asfaltitkomur,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,Yap İşlet Devret Santralları,ithalkomur,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,Yap İşlet Devret Santralları,fueloil,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,Yap İşlet Devret Santralları,motorin,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,Yap İşlet Devret Santralları,nafta,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,Yap İşlet Devret Santralları,lpg,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,Yap İşlet Devret Santralları,atikisi,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,Yap İşlet Devret Santralları,biyokutle,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,Yap İşlet Devret Santralları,jeotermal,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,Yap İşlet Devret Santralları,barajli,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,Yap İşlet Devret Santralları,akarsu,1.0,2026-11-10T13:33:06+03:00
-2026-11-07,Yap İşlet Devret Santralları,gunes,0.0,2026-11-10T13:33:06+03:00
-2026-11-07,Yap İşlet Devret Santralları,ruzgar,0.0,2026-11-10T13:33:06+03:00
-2026-11-08,EÜAŞ Santralları,dogalgaz,5.0,2026-11-10T13:33:17+03:00
-2026-11-08,EÜAŞ Santralları,lng,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,EÜAŞ Santralları,linyit,3.0,2026-11-10T13:33:17+03:00
-2026-11-08,EÜAŞ Santralları,taskomur,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,EÜAŞ Santralları,asfaltitkomur,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,EÜAŞ Santralları,ithalkomur,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,EÜAŞ Santralları,fueloil,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,EÜAŞ Santralları,motorin,1.0,2026-11-10T13:33:17+03:00
-2026-11-08,EÜAŞ Santralları,nafta,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,EÜAŞ Santralları,lpg,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,EÜAŞ Santralları,atikisi,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,EÜAŞ Santralları,biyokutle,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,EÜAŞ Santralları,jeotermal,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,EÜAŞ Santralları,barajli,38.0,2026-11-10T13:33:17+03:00
-2026-11-08,EÜAŞ Santralları,akarsu,7.0,2026-11-10T13:33:17+03:00
-2026-11-08,EÜAŞ Santralları,gunes,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,EÜAŞ Santralları,ruzgar,2.0,2026-11-10T13:33:17+03:00
-2026-11-08,İşletme Hakkı Devredilen Santrallar,dogalgaz,1.0,2026-11-10T13:33:17+03:00
-2026-11-08,İşletme Hakkı Devredilen Santrallar,lng,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,İşletme Hakkı Devredilen Santrallar,linyit,1.0,2026-11-10T13:33:17+03:00
-2026-11-08,İşletme Hakkı Devredilen Santrallar,taskomur,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,İşletme Hakkı Devredilen Santrallar,asfaltitkomur,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,İşletme Hakkı Devredilen Santrallar,ithalkomur,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,İşletme Hakkı Devredilen Santrallar,fueloil,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,İşletme Hakkı Devredilen Santrallar,motorin,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,İşletme Hakkı Devredilen Santrallar,nafta,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,İşletme Hakkı Devredilen Santrallar,lpg,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,İşletme Hakkı Devredilen Santrallar,atikisi,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,İşletme Hakkı Devredilen Santrallar,biyokutle,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,İşletme Hakkı Devredilen Santrallar,jeotermal,1.0,2026-11-10T13:33:17+03:00
-2026-11-08,İşletme Hakkı Devredilen Santrallar,barajli,25.0,2026-11-10T13:33:17+03:00
-2026-11-08,İşletme Hakkı Devredilen Santrallar,akarsu,66.0,2026-11-10T13:33:17+03:00
-2026-11-08,İşletme Hakkı Devredilen Santrallar,gunes,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,İşletme Hakkı Devredilen Santrallar,ruzgar,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,Lisanssız Santrallar,dogalgaz,107.0,2026-11-10T13:33:17+03:00
-2026-11-08,Lisanssız Santrallar,lng,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,Lisanssız Santrallar,linyit,2.0,2026-11-10T13:33:17+03:00
-2026-11-08,Lisanssız Santrallar,taskomur,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,Lisanssız Santrallar,asfaltitkomur,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,Lisanssız Santrallar,ithalkomur,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,Lisanssız Santrallar,fueloil,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,Lisanssız Santrallar,motorin,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,Lisanssız Santrallar,nafta,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,Lisanssız Santrallar,lpg,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,Lisanssız Santrallar,atikisi,16.0,2026-11-10T13:33:17+03:00
-2026-11-08,Lisanssız Santrallar,biyokutle,53.0,2026-11-10T13:33:17+03:00
-2026-11-08,Lisanssız Santrallar,jeotermal,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,Lisanssız Santrallar,barajli,1.0,2026-11-10T13:33:17+03:00
-2026-11-08,Lisanssız Santrallar,akarsu,27.0,2026-11-10T13:33:17+03:00
-2026-11-08,Lisanssız Santrallar,gunes,42905.0,2026-11-10T13:33:17+03:00
-2026-11-08,Lisanssız Santrallar,ruzgar,109.0,2026-11-10T13:33:17+03:00
-2026-11-08,Serbest Üretim Şirketi Santralları,dogalgaz,236.0,2026-11-10T13:33:17+03:00
-2026-11-08,Serbest Üretim Şirketi Santralları,lng,1.0,2026-11-10T13:33:17+03:00
-2026-11-08,Serbest Üretim Şirketi Santralları,linyit,42.0,2026-11-10T13:33:17+03:00
-2026-11-08,Serbest Üretim Şirketi Santralları,taskomur,4.0,2026-11-10T13:33:17+03:00
-2026-11-08,Serbest Üretim Şirketi Santralları,asfaltitkomur,1.0,2026-11-10T13:33:17+03:00
-2026-11-08,Serbest Üretim Şirketi Santralları,ithalkomur,16.0,2026-11-10T13:33:17+03:00
-2026-11-08,Serbest Üretim Şirketi Santralları,fueloil,7.0,2026-11-10T13:33:17+03:00
-2026-11-08,Serbest Üretim Şirketi Santralları,motorin,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,Serbest Üretim Şirketi Santralları,nafta,1.0,2026-11-10T13:33:17+03:00
-2026-11-08,Serbest Üretim Şirketi Santralları,lpg,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,Serbest Üretim Şirketi Santralları,atikisi,20.0,2026-11-10T13:33:17+03:00
-2026-11-08,Serbest Üretim Şirketi Santralları,biyokutle,309.0,2026-11-10T13:33:17+03:00
-2026-11-08,Serbest Üretim Şirketi Santralları,jeotermal,67.0,2026-11-10T13:33:17+03:00
-2026-11-08,Serbest Üretim Şirketi Santralları,barajli,84.0,2026-11-10T13:33:17+03:00
-2026-11-08,Serbest Üretim Şirketi Santralları,akarsu,528.0,2026-11-10T13:33:17+03:00
-2026-11-08,Serbest Üretim Şirketi Santralları,gunes,72.0,2026-11-10T13:33:17+03:00
-2026-11-08,Serbest Üretim Şirketi Santralları,ruzgar,311.0,2026-11-10T13:33:17+03:00
-2026-11-08,Yap İşlet Devret Santralları,dogalgaz,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,Yap İşlet Devret Santralları,lng,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,Yap İşlet Devret Santralları,linyit,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,Yap İşlet Devret Santralları,taskomur,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,Yap İşlet Devret Santralları,asfaltitkomur,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,Yap İşlet Devret Santralları,ithalkomur,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,Yap İşlet Devret Santralları,fueloil,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,Yap İşlet Devret Santralları,motorin,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,Yap İşlet Devret Santralları,nafta,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,Yap İşlet Devret Santralları,lpg,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,Yap İşlet Devret Santralları,atikisi,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,Yap İşlet Devret Santralları,biyokutle,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,Yap İşlet Devret Santralları,jeotermal,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,Yap İşlet Devret Santralları,barajli,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,Yap İşlet Devret Santralları,akarsu,1.0,2026-11-10T13:33:17+03:00
-2026-11-08,Yap İşlet Devret Santralları,gunes,0.0,2026-11-10T13:33:17+03:00
-2026-11-08,Yap İşlet Devret Santralları,ruzgar,0.0,2026-11-10T13:33:17+03:00
-2026-11-09,EÜAŞ Santralları,dogalgaz,5.0,2026-11-10T13:33:30+03:00
-2026-11-09,EÜAŞ Santralları,lng,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,EÜAŞ Santralları,linyit,3.0,2026-11-10T13:33:30+03:00
-2026-11-09,EÜAŞ Santralları,taskomur,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,EÜAŞ Santralları,asfaltitkomur,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,EÜAŞ Santralları,ithalkomur,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,EÜAŞ Santralları,fueloil,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,EÜAŞ Santralları,motorin,1.0,2026-11-10T13:33:30+03:00
-2026-11-09,EÜAŞ Santralları,nafta,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,EÜAŞ Santralları,lpg,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,EÜAŞ Santralları,atikisi,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,EÜAŞ Santralları,biyokutle,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,EÜAŞ Santralları,jeotermal,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,EÜAŞ Santralları,barajli,38.0,2026-11-10T13:33:30+03:00
-2026-11-09,EÜAŞ Santralları,akarsu,7.0,2026-11-10T13:33:30+03:00
-2026-11-09,EÜAŞ Santralları,gunes,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,EÜAŞ Santralları,ruzgar,2.0,2026-11-10T13:33:30+03:00
-2026-11-09,İşletme Hakkı Devredilen Santrallar,dogalgaz,1.0,2026-11-10T13:33:30+03:00
-2026-11-09,İşletme Hakkı Devredilen Santrallar,lng,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,İşletme Hakkı Devredilen Santrallar,linyit,1.0,2026-11-10T13:33:30+03:00
-2026-11-09,İşletme Hakkı Devredilen Santrallar,taskomur,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,İşletme Hakkı Devredilen Santrallar,asfaltitkomur,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,İşletme Hakkı Devredilen Santrallar,ithalkomur,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,İşletme Hakkı Devredilen Santrallar,fueloil,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,İşletme Hakkı Devredilen Santrallar,motorin,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,İşletme Hakkı Devredilen Santrallar,nafta,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,İşletme Hakkı Devredilen Santrallar,lpg,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,İşletme Hakkı Devredilen Santrallar,atikisi,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,İşletme Hakkı Devredilen Santrallar,biyokutle,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,İşletme Hakkı Devredilen Santrallar,jeotermal,1.0,2026-11-10T13:33:30+03:00
-2026-11-09,İşletme Hakkı Devredilen Santrallar,barajli,25.0,2026-11-10T13:33:30+03:00
-2026-11-09,İşletme Hakkı Devredilen Santrallar,akarsu,66.0,2026-11-10T13:33:30+03:00
-2026-11-09,İşletme Hakkı Devredilen Santrallar,gunes,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,İşletme Hakkı Devredilen Santrallar,ruzgar,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,Lisanssız Santrallar,dogalgaz,107.0,2026-11-10T13:33:30+03:00
-2026-11-09,Lisanssız Santrallar,lng,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,Lisanssız Santrallar,linyit,2.0,2026-11-10T13:33:30+03:00
-2026-11-09,Lisanssız Santrallar,taskomur,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,Lisanssız Santrallar,asfaltitkomur,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,Lisanssız Santrallar,ithalkomur,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,Lisanssız Santrallar,fueloil,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,Lisanssız Santrallar,motorin,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,Lisanssız Santrallar,nafta,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,Lisanssız Santrallar,lpg,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,Lisanssız Santrallar,atikisi,16.0,2026-11-10T13:33:30+03:00
-2026-11-09,Lisanssız Santrallar,biyokutle,53.0,2026-11-10T13:33:30+03:00
-2026-11-09,Lisanssız Santrallar,jeotermal,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,Lisanssız Santrallar,barajli,1.0,2026-11-10T13:33:30+03:00
-2026-11-09,Lisanssız Santrallar,akarsu,27.0,2026-11-10T13:33:30+03:00
-2026-11-09,Lisanssız Santrallar,gunes,42906.0,2026-11-10T13:33:30+03:00
-2026-11-09,Lisanssız Santrallar,ruzgar,109.0,2026-11-10T13:33:30+03:00
-2026-11-09,Serbest Üretim Şirketi Santralları,dogalgaz,236.0,2026-11-10T13:33:30+03:00
-2026-11-09,Serbest Üretim Şirketi Santralları,lng,1.0,2026-11-10T13:33:30+03:00
-2026-11-09,Serbest Üretim Şirketi Santralları,linyit,42.0,2026-11-10T13:33:30+03:00
-2026-11-09,Serbest Üretim Şirketi Santralları,taskomur,4.0,2026-11-10T13:33:30+03:00
-2026-11-09,Serbest Üretim Şirketi Santralları,asfaltitkomur,1.0,2026-11-10T13:33:30+03:00
-2026-11-09,Serbest Üretim Şirketi Santralları,ithalkomur,16.0,2026-11-10T13:33:30+03:00
-2026-11-09,Serbest Üretim Şirketi Santralları,fueloil,7.0,2026-11-10T13:33:30+03:00
-2026-11-09,Serbest Üretim Şirketi Santralları,motorin,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,Serbest Üretim Şirketi Santralları,nafta,1.0,2026-11-10T13:33:30+03:00
-2026-11-09,Serbest Üretim Şirketi Santralları,lpg,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,Serbest Üretim Şirketi Santralları,atikisi,20.0,2026-11-10T13:33:30+03:00
-2026-11-09,Serbest Üretim Şirketi Santralları,biyokutle,309.0,2026-11-10T13:33:30+03:00
-2026-11-09,Serbest Üretim Şirketi Santralları,jeotermal,67.0,2026-11-10T13:33:30+03:00
-2026-11-09,Serbest Üretim Şirketi Santralları,barajli,84.0,2026-11-10T13:33:30+03:00
-2026-11-09,Serbest Üretim Şirketi Santralları,akarsu,528.0,2026-11-10T13:33:30+03:00
-2026-11-09,Serbest Üretim Şirketi Santralları,gunes,72.0,2026-11-10T13:33:30+03:00
-2026-11-09,Serbest Üretim Şirketi Santralları,ruzgar,311.0,2026-11-10T13:33:30+03:00
-2026-11-09,Yap İşlet Devret Santralları,dogalgaz,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,Yap İşlet Devret Santralları,lng,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,Yap İşlet Devret Santralları,linyit,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,Yap İşlet Devret Santralları,taskomur,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,Yap İşlet Devret Santralları,asfaltitkomur,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,Yap İşlet Devret Santralları,ithalkomur,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,Yap İşlet Devret Santralları,fueloil,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,Yap İşlet Devret Santralları,motorin,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,Yap İşlet Devret Santralları,nafta,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,Yap İşlet Devret Santralları,lpg,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,Yap İşlet Devret Santralları,atikisi,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,Yap İşlet Devret Santralları,biyokutle,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,Yap İşlet Devret Santralları,jeotermal,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,Yap İşlet Devret Santralları,barajli,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,Yap İşlet Devret Santralları,akarsu,1.0,2026-11-10T13:33:30+03:00
-2026-11-09,Yap İşlet Devret Santralları,gunes,0.0,2026-11-10T13:33:30+03:00
-2026-11-09,Yap İşlet Devret Santralları,ruzgar,0.0,2026-11-10T13:33:30+03:00
+2026-11-05,EÜAŞ Santralları,dogalgaz,5.0,2026-11-11T13:11:05+03:00
+2026-11-05,EÜAŞ Santralları,lng,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,EÜAŞ Santralları,linyit,3.0,2026-11-11T13:11:05+03:00
+2026-11-05,EÜAŞ Santralları,taskomur,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,EÜAŞ Santralları,asfaltitkomur,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,EÜAŞ Santralları,ithalkomur,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,EÜAŞ Santralları,fueloil,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,EÜAŞ Santralları,motorin,1.0,2026-11-11T13:11:05+03:00
+2026-11-05,EÜAŞ Santralları,nafta,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,EÜAŞ Santralları,lpg,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,EÜAŞ Santralları,atikisi,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,EÜAŞ Santralları,biyokutle,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,EÜAŞ Santralları,jeotermal,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,EÜAŞ Santralları,barajli,38.0,2026-11-11T13:11:05+03:00
+2026-11-05,EÜAŞ Santralları,akarsu,7.0,2026-11-11T13:11:05+03:00
+2026-11-05,EÜAŞ Santralları,gunes,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,EÜAŞ Santralları,ruzgar,2.0,2026-11-11T13:11:05+03:00
+2026-11-05,İşletme Hakkı Devredilen Santrallar,dogalgaz,1.0,2026-11-11T13:11:05+03:00
+2026-11-05,İşletme Hakkı Devredilen Santrallar,lng,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,İşletme Hakkı Devredilen Santrallar,linyit,1.0,2026-11-11T13:11:05+03:00
+2026-11-05,İşletme Hakkı Devredilen Santrallar,taskomur,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,İşletme Hakkı Devredilen Santrallar,asfaltitkomur,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,İşletme Hakkı Devredilen Santrallar,ithalkomur,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,İşletme Hakkı Devredilen Santrallar,fueloil,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,İşletme Hakkı Devredilen Santrallar,motorin,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,İşletme Hakkı Devredilen Santrallar,nafta,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,İşletme Hakkı Devredilen Santrallar,lpg,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,İşletme Hakkı Devredilen Santrallar,atikisi,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,İşletme Hakkı Devredilen Santrallar,biyokutle,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,İşletme Hakkı Devredilen Santrallar,jeotermal,1.0,2026-11-11T13:11:05+03:00
+2026-11-05,İşletme Hakkı Devredilen Santrallar,barajli,25.0,2026-11-11T13:11:05+03:00
+2026-11-05,İşletme Hakkı Devredilen Santrallar,akarsu,66.0,2026-11-11T13:11:05+03:00
+2026-11-05,İşletme Hakkı Devredilen Santrallar,gunes,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,İşletme Hakkı Devredilen Santrallar,ruzgar,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,Lisanssız Santrallar,dogalgaz,107.0,2026-11-11T13:11:05+03:00
+2026-11-05,Lisanssız Santrallar,lng,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,Lisanssız Santrallar,linyit,2.0,2026-11-11T13:11:05+03:00
+2026-11-05,Lisanssız Santrallar,taskomur,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,Lisanssız Santrallar,asfaltitkomur,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,Lisanssız Santrallar,ithalkomur,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,Lisanssız Santrallar,fueloil,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,Lisanssız Santrallar,motorin,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,Lisanssız Santrallar,nafta,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,Lisanssız Santrallar,lpg,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,Lisanssız Santrallar,atikisi,16.0,2026-11-11T13:11:05+03:00
+2026-11-05,Lisanssız Santrallar,biyokutle,53.0,2026-11-11T13:11:05+03:00
+2026-11-05,Lisanssız Santrallar,jeotermal,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,Lisanssız Santrallar,barajli,1.0,2026-11-11T13:11:05+03:00
+2026-11-05,Lisanssız Santrallar,akarsu,27.0,2026-11-11T13:11:05+03:00
+2026-11-05,Lisanssız Santrallar,gunes,42901.0,2026-11-11T13:11:05+03:00
+2026-11-05,Lisanssız Santrallar,ruzgar,109.0,2026-11-11T13:11:05+03:00
+2026-11-05,Serbest Üretim Şirketi Santralları,dogalgaz,236.0,2026-11-11T13:11:05+03:00
+2026-11-05,Serbest Üretim Şirketi Santralları,lng,1.0,2026-11-11T13:11:05+03:00
+2026-11-05,Serbest Üretim Şirketi Santralları,linyit,42.0,2026-11-11T13:11:05+03:00
+2026-11-05,Serbest Üretim Şirketi Santralları,taskomur,4.0,2026-11-11T13:11:05+03:00
+2026-11-05,Serbest Üretim Şirketi Santralları,asfaltitkomur,1.0,2026-11-11T13:11:05+03:00
+2026-11-05,Serbest Üretim Şirketi Santralları,ithalkomur,16.0,2026-11-11T13:11:05+03:00
+2026-11-05,Serbest Üretim Şirketi Santralları,fueloil,7.0,2026-11-11T13:11:05+03:00
+2026-11-05,Serbest Üretim Şirketi Santralları,motorin,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,Serbest Üretim Şirketi Santralları,nafta,1.0,2026-11-11T13:11:05+03:00
+2026-11-05,Serbest Üretim Şirketi Santralları,lpg,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,Serbest Üretim Şirketi Santralları,atikisi,20.0,2026-11-11T13:11:05+03:00
+2026-11-05,Serbest Üretim Şirketi Santralları,biyokutle,309.0,2026-11-11T13:11:05+03:00
+2026-11-05,Serbest Üretim Şirketi Santralları,jeotermal,67.0,2026-11-11T13:11:05+03:00
+2026-11-05,Serbest Üretim Şirketi Santralları,barajli,84.0,2026-11-11T13:11:05+03:00
+2026-11-05,Serbest Üretim Şirketi Santralları,akarsu,528.0,2026-11-11T13:11:05+03:00
+2026-11-05,Serbest Üretim Şirketi Santralları,gunes,72.0,2026-11-11T13:11:05+03:00
+2026-11-05,Serbest Üretim Şirketi Santralları,ruzgar,311.0,2026-11-11T13:11:05+03:00
+2026-11-05,Yap İşlet Devret Santralları,dogalgaz,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,Yap İşlet Devret Santralları,lng,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,Yap İşlet Devret Santralları,linyit,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,Yap İşlet Devret Santralları,taskomur,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,Yap İşlet Devret Santralları,asfaltitkomur,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,Yap İşlet Devret Santralları,ithalkomur,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,Yap İşlet Devret Santralları,fueloil,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,Yap İşlet Devret Santralları,motorin,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,Yap İşlet Devret Santralları,nafta,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,Yap İşlet Devret Santralları,lpg,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,Yap İşlet Devret Santralları,atikisi,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,Yap İşlet Devret Santralları,biyokutle,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,Yap İşlet Devret Santralları,jeotermal,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,Yap İşlet Devret Santralları,barajli,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,Yap İşlet Devret Santralları,akarsu,1.0,2026-11-11T13:11:05+03:00
+2026-11-05,Yap İşlet Devret Santralları,gunes,0.0,2026-11-11T13:11:05+03:00
+2026-11-05,Yap İşlet Devret Santralları,ruzgar,0.0,2026-11-11T13:11:05+03:00
+2026-11-06,EÜAŞ Santralları,dogalgaz,5.0,2026-11-11T13:11:17+03:00
+2026-11-06,EÜAŞ Santralları,lng,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,EÜAŞ Santralları,linyit,3.0,2026-11-11T13:11:17+03:00
+2026-11-06,EÜAŞ Santralları,taskomur,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,EÜAŞ Santralları,asfaltitkomur,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,EÜAŞ Santralları,ithalkomur,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,EÜAŞ Santralları,fueloil,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,EÜAŞ Santralları,motorin,1.0,2026-11-11T13:11:17+03:00
+2026-11-06,EÜAŞ Santralları,nafta,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,EÜAŞ Santralları,lpg,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,EÜAŞ Santralları,atikisi,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,EÜAŞ Santralları,biyokutle,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,EÜAŞ Santralları,jeotermal,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,EÜAŞ Santralları,barajli,38.0,2026-11-11T13:11:17+03:00
+2026-11-06,EÜAŞ Santralları,akarsu,7.0,2026-11-11T13:11:17+03:00
+2026-11-06,EÜAŞ Santralları,gunes,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,EÜAŞ Santralları,ruzgar,2.0,2026-11-11T13:11:17+03:00
+2026-11-06,İşletme Hakkı Devredilen Santrallar,dogalgaz,1.0,2026-11-11T13:11:17+03:00
+2026-11-06,İşletme Hakkı Devredilen Santrallar,lng,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,İşletme Hakkı Devredilen Santrallar,linyit,1.0,2026-11-11T13:11:17+03:00
+2026-11-06,İşletme Hakkı Devredilen Santrallar,taskomur,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,İşletme Hakkı Devredilen Santrallar,asfaltitkomur,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,İşletme Hakkı Devredilen Santrallar,ithalkomur,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,İşletme Hakkı Devredilen Santrallar,fueloil,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,İşletme Hakkı Devredilen Santrallar,motorin,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,İşletme Hakkı Devredilen Santrallar,nafta,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,İşletme Hakkı Devredilen Santrallar,lpg,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,İşletme Hakkı Devredilen Santrallar,atikisi,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,İşletme Hakkı Devredilen Santrallar,biyokutle,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,İşletme Hakkı Devredilen Santrallar,jeotermal,1.0,2026-11-11T13:11:17+03:00
+2026-11-06,İşletme Hakkı Devredilen Santrallar,barajli,25.0,2026-11-11T13:11:17+03:00
+2026-11-06,İşletme Hakkı Devredilen Santrallar,akarsu,66.0,2026-11-11T13:11:17+03:00
+2026-11-06,İşletme Hakkı Devredilen Santrallar,gunes,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,İşletme Hakkı Devredilen Santrallar,ruzgar,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,Lisanssız Santrallar,dogalgaz,107.0,2026-11-11T13:11:17+03:00
+2026-11-06,Lisanssız Santrallar,lng,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,Lisanssız Santrallar,linyit,2.0,2026-11-11T13:11:17+03:00
+2026-11-06,Lisanssız Santrallar,taskomur,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,Lisanssız Santrallar,asfaltitkomur,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,Lisanssız Santrallar,ithalkomur,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,Lisanssız Santrallar,fueloil,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,Lisanssız Santrallar,motorin,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,Lisanssız Santrallar,nafta,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,Lisanssız Santrallar,lpg,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,Lisanssız Santrallar,atikisi,16.0,2026-11-11T13:11:17+03:00
+2026-11-06,Lisanssız Santrallar,biyokutle,53.0,2026-11-11T13:11:17+03:00
+2026-11-06,Lisanssız Santrallar,jeotermal,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,Lisanssız Santrallar,barajli,1.0,2026-11-11T13:11:17+03:00
+2026-11-06,Lisanssız Santrallar,akarsu,27.0,2026-11-11T13:11:17+03:00
+2026-11-06,Lisanssız Santrallar,gunes,42924.0,2026-11-11T13:11:17+03:00
+2026-11-06,Lisanssız Santrallar,ruzgar,109.0,2026-11-11T13:11:17+03:00
+2026-11-06,Serbest Üretim Şirketi Santralları,dogalgaz,236.0,2026-11-11T13:11:17+03:00
+2026-11-06,Serbest Üretim Şirketi Santralları,lng,1.0,2026-11-11T13:11:17+03:00
+2026-11-06,Serbest Üretim Şirketi Santralları,linyit,42.0,2026-11-11T13:11:17+03:00
+2026-11-06,Serbest Üretim Şirketi Santralları,taskomur,4.0,2026-11-11T13:11:17+03:00
+2026-11-06,Serbest Üretim Şirketi Santralları,asfaltitkomur,1.0,2026-11-11T13:11:17+03:00
+2026-11-06,Serbest Üretim Şirketi Santralları,ithalkomur,16.0,2026-11-11T13:11:17+03:00
+2026-11-06,Serbest Üretim Şirketi Santralları,fueloil,7.0,2026-11-11T13:11:17+03:00
+2026-11-06,Serbest Üretim Şirketi Santralları,motorin,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,Serbest Üretim Şirketi Santralları,nafta,1.0,2026-11-11T13:11:17+03:00
+2026-11-06,Serbest Üretim Şirketi Santralları,lpg,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,Serbest Üretim Şirketi Santralları,atikisi,20.0,2026-11-11T13:11:17+03:00
+2026-11-06,Serbest Üretim Şirketi Santralları,biyokutle,309.0,2026-11-11T13:11:17+03:00
+2026-11-06,Serbest Üretim Şirketi Santralları,jeotermal,67.0,2026-11-11T13:11:17+03:00
+2026-11-06,Serbest Üretim Şirketi Santralları,barajli,84.0,2026-11-11T13:11:17+03:00
+2026-11-06,Serbest Üretim Şirketi Santralları,akarsu,528.0,2026-11-11T13:11:17+03:00
+2026-11-06,Serbest Üretim Şirketi Santralları,gunes,72.0,2026-11-11T13:11:17+03:00
+2026-11-06,Serbest Üretim Şirketi Santralları,ruzgar,311.0,2026-11-11T13:11:17+03:00
+2026-11-06,Yap İşlet Devret Santralları,dogalgaz,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,Yap İşlet Devret Santralları,lng,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,Yap İşlet Devret Santralları,linyit,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,Yap İşlet Devret Santralları,taskomur,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,Yap İşlet Devret Santralları,asfaltitkomur,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,Yap İşlet Devret Santralları,ithalkomur,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,Yap İşlet Devret Santralları,fueloil,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,Yap İşlet Devret Santralları,motorin,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,Yap İşlet Devret Santralları,nafta,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,Yap İşlet Devret Santralları,lpg,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,Yap İşlet Devret Santralları,atikisi,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,Yap İşlet Devret Santralları,biyokutle,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,Yap İşlet Devret Santralları,jeotermal,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,Yap İşlet Devret Santralları,barajli,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,Yap İşlet Devret Santralları,akarsu,1.0,2026-11-11T13:11:17+03:00
+2026-11-06,Yap İşlet Devret Santralları,gunes,0.0,2026-11-11T13:11:17+03:00
+2026-11-06,Yap İşlet Devret Santralları,ruzgar,0.0,2026-11-11T13:11:17+03:00
+2026-11-07,EÜAŞ Santralları,dogalgaz,5.0,2026-11-11T13:11:28+03:00
+2026-11-07,EÜAŞ Santralları,lng,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,EÜAŞ Santralları,linyit,3.0,2026-11-11T13:11:28+03:00
+2026-11-07,EÜAŞ Santralları,taskomur,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,EÜAŞ Santralları,asfaltitkomur,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,EÜAŞ Santralları,ithalkomur,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,EÜAŞ Santralları,fueloil,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,EÜAŞ Santralları,motorin,1.0,2026-11-11T13:11:28+03:00
+2026-11-07,EÜAŞ Santralları,nafta,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,EÜAŞ Santralları,lpg,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,EÜAŞ Santralları,atikisi,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,EÜAŞ Santralları,biyokutle,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,EÜAŞ Santralları,jeotermal,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,EÜAŞ Santralları,barajli,38.0,2026-11-11T13:11:28+03:00
+2026-11-07,EÜAŞ Santralları,akarsu,7.0,2026-11-11T13:11:28+03:00
+2026-11-07,EÜAŞ Santralları,gunes,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,EÜAŞ Santralları,ruzgar,2.0,2026-11-11T13:11:28+03:00
+2026-11-07,İşletme Hakkı Devredilen Santrallar,dogalgaz,1.0,2026-11-11T13:11:28+03:00
+2026-11-07,İşletme Hakkı Devredilen Santrallar,lng,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,İşletme Hakkı Devredilen Santrallar,linyit,1.0,2026-11-11T13:11:28+03:00
+2026-11-07,İşletme Hakkı Devredilen Santrallar,taskomur,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,İşletme Hakkı Devredilen Santrallar,asfaltitkomur,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,İşletme Hakkı Devredilen Santrallar,ithalkomur,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,İşletme Hakkı Devredilen Santrallar,fueloil,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,İşletme Hakkı Devredilen Santrallar,motorin,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,İşletme Hakkı Devredilen Santrallar,nafta,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,İşletme Hakkı Devredilen Santrallar,lpg,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,İşletme Hakkı Devredilen Santrallar,atikisi,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,İşletme Hakkı Devredilen Santrallar,biyokutle,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,İşletme Hakkı Devredilen Santrallar,jeotermal,1.0,2026-11-11T13:11:28+03:00
+2026-11-07,İşletme Hakkı Devredilen Santrallar,barajli,25.0,2026-11-11T13:11:28+03:00
+2026-11-07,İşletme Hakkı Devredilen Santrallar,akarsu,66.0,2026-11-11T13:11:28+03:00
+2026-11-07,İşletme Hakkı Devredilen Santrallar,gunes,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,İşletme Hakkı Devredilen Santrallar,ruzgar,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,Lisanssız Santrallar,dogalgaz,107.0,2026-11-11T13:11:28+03:00
+2026-11-07,Lisanssız Santrallar,lng,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,Lisanssız Santrallar,linyit,2.0,2026-11-11T13:11:28+03:00
+2026-11-07,Lisanssız Santrallar,taskomur,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,Lisanssız Santrallar,asfaltitkomur,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,Lisanssız Santrallar,ithalkomur,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,Lisanssız Santrallar,fueloil,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,Lisanssız Santrallar,motorin,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,Lisanssız Santrallar,nafta,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,Lisanssız Santrallar,lpg,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,Lisanssız Santrallar,atikisi,16.0,2026-11-11T13:11:28+03:00
+2026-11-07,Lisanssız Santrallar,biyokutle,53.0,2026-11-11T13:11:28+03:00
+2026-11-07,Lisanssız Santrallar,jeotermal,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,Lisanssız Santrallar,barajli,1.0,2026-11-11T13:11:28+03:00
+2026-11-07,Lisanssız Santrallar,akarsu,27.0,2026-11-11T13:11:28+03:00
+2026-11-07,Lisanssız Santrallar,gunes,42924.0,2026-11-11T13:11:28+03:00
+2026-11-07,Lisanssız Santrallar,ruzgar,109.0,2026-11-11T13:11:28+03:00
+2026-11-07,Serbest Üretim Şirketi Santralları,dogalgaz,236.0,2026-11-11T13:11:28+03:00
+2026-11-07,Serbest Üretim Şirketi Santralları,lng,1.0,2026-11-11T13:11:28+03:00
+2026-11-07,Serbest Üretim Şirketi Santralları,linyit,42.0,2026-11-11T13:11:28+03:00
+2026-11-07,Serbest Üretim Şirketi Santralları,taskomur,4.0,2026-11-11T13:11:28+03:00
+2026-11-07,Serbest Üretim Şirketi Santralları,asfaltitkomur,1.0,2026-11-11T13:11:28+03:00
+2026-11-07,Serbest Üretim Şirketi Santralları,ithalkomur,16.0,2026-11-11T13:11:28+03:00
+2026-11-07,Serbest Üretim Şirketi Santralları,fueloil,7.0,2026-11-11T13:11:28+03:00
+2026-11-07,Serbest Üretim Şirketi Santralları,motorin,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,Serbest Üretim Şirketi Santralları,nafta,1.0,2026-11-11T13:11:28+03:00
+2026-11-07,Serbest Üretim Şirketi Santralları,lpg,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,Serbest Üretim Şirketi Santralları,atikisi,20.0,2026-11-11T13:11:28+03:00
+2026-11-07,Serbest Üretim Şirketi Santralları,biyokutle,309.0,2026-11-11T13:11:28+03:00
+2026-11-07,Serbest Üretim Şirketi Santralları,jeotermal,67.0,2026-11-11T13:11:28+03:00
+2026-11-07,Serbest Üretim Şirketi Santralları,barajli,84.0,2026-11-11T13:11:28+03:00
+2026-11-07,Serbest Üretim Şirketi Santralları,akarsu,528.0,2026-11-11T13:11:28+03:00
+2026-11-07,Serbest Üretim Şirketi Santralları,gunes,72.0,2026-11-11T13:11:28+03:00
+2026-11-07,Serbest Üretim Şirketi Santralları,ruzgar,311.0,2026-11-11T13:11:28+03:00
+2026-11-07,Yap İşlet Devret Santralları,dogalgaz,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,Yap İşlet Devret Santralları,lng,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,Yap İşlet Devret Santralları,linyit,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,Yap İşlet Devret Santralları,taskomur,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,Yap İşlet Devret Santralları,asfaltitkomur,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,Yap İşlet Devret Santralları,ithalkomur,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,Yap İşlet Devret Santralları,fueloil,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,Yap İşlet Devret Santralları,motorin,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,Yap İşlet Devret Santralları,nafta,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,Yap İşlet Devret Santralları,lpg,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,Yap İşlet Devret Santralları,atikisi,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,Yap İşlet Devret Santralları,biyokutle,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,Yap İşlet Devret Santralları,jeotermal,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,Yap İşlet Devret Santralları,barajli,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,Yap İşlet Devret Santralları,akarsu,1.0,2026-11-11T13:11:28+03:00
+2026-11-07,Yap İşlet Devret Santralları,gunes,0.0,2026-11-11T13:11:28+03:00
+2026-11-07,Yap İşlet Devret Santralları,ruzgar,0.0,2026-11-11T13:11:28+03:00
+2026-11-08,EÜAŞ Santralları,dogalgaz,5.0,2026-11-11T13:11:38+03:00
+2026-11-08,EÜAŞ Santralları,lng,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,EÜAŞ Santralları,linyit,3.0,2026-11-11T13:11:38+03:00
+2026-11-08,EÜAŞ Santralları,taskomur,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,EÜAŞ Santralları,asfaltitkomur,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,EÜAŞ Santralları,ithalkomur,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,EÜAŞ Santralları,fueloil,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,EÜAŞ Santralları,motorin,1.0,2026-11-11T13:11:38+03:00
+2026-11-08,EÜAŞ Santralları,nafta,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,EÜAŞ Santralları,lpg,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,EÜAŞ Santralları,atikisi,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,EÜAŞ Santralları,biyokutle,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,EÜAŞ Santralları,jeotermal,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,EÜAŞ Santralları,barajli,38.0,2026-11-11T13:11:38+03:00
+2026-11-08,EÜAŞ Santralları,akarsu,7.0,2026-11-11T13:11:38+03:00
+2026-11-08,EÜAŞ Santralları,gunes,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,EÜAŞ Santralları,ruzgar,2.0,2026-11-11T13:11:38+03:00
+2026-11-08,İşletme Hakkı Devredilen Santrallar,dogalgaz,1.0,2026-11-11T13:11:38+03:00
+2026-11-08,İşletme Hakkı Devredilen Santrallar,lng,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,İşletme Hakkı Devredilen Santrallar,linyit,1.0,2026-11-11T13:11:38+03:00
+2026-11-08,İşletme Hakkı Devredilen Santrallar,taskomur,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,İşletme Hakkı Devredilen Santrallar,asfaltitkomur,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,İşletme Hakkı Devredilen Santrallar,ithalkomur,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,İşletme Hakkı Devredilen Santrallar,fueloil,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,İşletme Hakkı Devredilen Santrallar,motorin,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,İşletme Hakkı Devredilen Santrallar,nafta,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,İşletme Hakkı Devredilen Santrallar,lpg,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,İşletme Hakkı Devredilen Santrallar,atikisi,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,İşletme Hakkı Devredilen Santrallar,biyokutle,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,İşletme Hakkı Devredilen Santrallar,jeotermal,1.0,2026-11-11T13:11:38+03:00
+2026-11-08,İşletme Hakkı Devredilen Santrallar,barajli,25.0,2026-11-11T13:11:38+03:00
+2026-11-08,İşletme Hakkı Devredilen Santrallar,akarsu,66.0,2026-11-11T13:11:38+03:00
+2026-11-08,İşletme Hakkı Devredilen Santrallar,gunes,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,İşletme Hakkı Devredilen Santrallar,ruzgar,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,Lisanssız Santrallar,dogalgaz,107.0,2026-11-11T13:11:38+03:00
+2026-11-08,Lisanssız Santrallar,lng,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,Lisanssız Santrallar,linyit,2.0,2026-11-11T13:11:38+03:00
+2026-11-08,Lisanssız Santrallar,taskomur,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,Lisanssız Santrallar,asfaltitkomur,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,Lisanssız Santrallar,ithalkomur,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,Lisanssız Santrallar,fueloil,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,Lisanssız Santrallar,motorin,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,Lisanssız Santrallar,nafta,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,Lisanssız Santrallar,lpg,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,Lisanssız Santrallar,atikisi,16.0,2026-11-11T13:11:38+03:00
+2026-11-08,Lisanssız Santrallar,biyokutle,53.0,2026-11-11T13:11:38+03:00
+2026-11-08,Lisanssız Santrallar,jeotermal,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,Lisanssız Santrallar,barajli,1.0,2026-11-11T13:11:38+03:00
+2026-11-08,Lisanssız Santrallar,akarsu,27.0,2026-11-11T13:11:38+03:00
+2026-11-08,Lisanssız Santrallar,gunes,42924.0,2026-11-11T13:11:38+03:00
+2026-11-08,Lisanssız Santrallar,ruzgar,109.0,2026-11-11T13:11:38+03:00
+2026-11-08,Serbest Üretim Şirketi Santralları,dogalgaz,236.0,2026-11-11T13:11:38+03:00
+2026-11-08,Serbest Üretim Şirketi Santralları,lng,1.0,2026-11-11T13:11:38+03:00
+2026-11-08,Serbest Üretim Şirketi Santralları,linyit,42.0,2026-11-11T13:11:38+03:00
+2026-11-08,Serbest Üretim Şirketi Santralları,taskomur,4.0,2026-11-11T13:11:38+03:00
+2026-11-08,Serbest Üretim Şirketi Santralları,asfaltitkomur,1.0,2026-11-11T13:11:38+03:00
+2026-11-08,Serbest Üretim Şirketi Santralları,ithalkomur,16.0,2026-11-11T13:11:38+03:00
+2026-11-08,Serbest Üretim Şirketi Santralları,fueloil,7.0,2026-11-11T13:11:38+03:00
+2026-11-08,Serbest Üretim Şirketi Santralları,motorin,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,Serbest Üretim Şirketi Santralları,nafta,1.0,2026-11-11T13:11:38+03:00
+2026-11-08,Serbest Üretim Şirketi Santralları,lpg,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,Serbest Üretim Şirketi Santralları,atikisi,20.0,2026-11-11T13:11:38+03:00
+2026-11-08,Serbest Üretim Şirketi Santralları,biyokutle,309.0,2026-11-11T13:11:38+03:00
+2026-11-08,Serbest Üretim Şirketi Santralları,jeotermal,67.0,2026-11-11T13:11:38+03:00
+2026-11-08,Serbest Üretim Şirketi Santralları,barajli,84.0,2026-11-11T13:11:38+03:00
+2026-11-08,Serbest Üretim Şirketi Santralları,akarsu,528.0,2026-11-11T13:11:38+03:00
+2026-11-08,Serbest Üretim Şirketi Santralları,gunes,72.0,2026-11-11T13:11:38+03:00
+2026-11-08,Serbest Üretim Şirketi Santralları,ruzgar,311.0,2026-11-11T13:11:38+03:00
+2026-11-08,Yap İşlet Devret Santralları,dogalgaz,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,Yap İşlet Devret Santralları,lng,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,Yap İşlet Devret Santralları,linyit,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,Yap İşlet Devret Santralları,taskomur,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,Yap İşlet Devret Santralları,asfaltitkomur,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,Yap İşlet Devret Santralları,ithalkomur,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,Yap İşlet Devret Santralları,fueloil,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,Yap İşlet Devret Santralları,motorin,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,Yap İşlet Devret Santralları,nafta,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,Yap İşlet Devret Santralları,lpg,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,Yap İşlet Devret Santralları,atikisi,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,Yap İşlet Devret Santralları,biyokutle,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,Yap İşlet Devret Santralları,jeotermal,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,Yap İşlet Devret Santralları,barajli,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,Yap İşlet Devret Santralları,akarsu,1.0,2026-11-11T13:11:38+03:00
+2026-11-08,Yap İşlet Devret Santralları,gunes,0.0,2026-11-11T13:11:38+03:00
+2026-11-08,Yap İşlet Devret Santralları,ruzgar,0.0,2026-11-11T13:11:38+03:00
+2026-11-09,EÜAŞ Santralları,dogalgaz,5.0,2026-11-11T13:11:51+03:00
+2026-11-09,EÜAŞ Santralları,lng,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,EÜAŞ Santralları,linyit,3.0,2026-11-11T13:11:51+03:00
+2026-11-09,EÜAŞ Santralları,taskomur,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,EÜAŞ Santralları,asfaltitkomur,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,EÜAŞ Santralları,ithalkomur,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,EÜAŞ Santralları,fueloil,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,EÜAŞ Santralları,motorin,1.0,2026-11-11T13:11:51+03:00
+2026-11-09,EÜAŞ Santralları,nafta,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,EÜAŞ Santralları,lpg,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,EÜAŞ Santralları,atikisi,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,EÜAŞ Santralları,biyokutle,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,EÜAŞ Santralları,jeotermal,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,EÜAŞ Santralları,barajli,38.0,2026-11-11T13:11:51+03:00
+2026-11-09,EÜAŞ Santralları,akarsu,7.0,2026-11-11T13:11:51+03:00
+2026-11-09,EÜAŞ Santralları,gunes,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,EÜAŞ Santralları,ruzgar,2.0,2026-11-11T13:11:51+03:00
+2026-11-09,İşletme Hakkı Devredilen Santrallar,dogalgaz,1.0,2026-11-11T13:11:51+03:00
+2026-11-09,İşletme Hakkı Devredilen Santrallar,lng,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,İşletme Hakkı Devredilen Santrallar,linyit,1.0,2026-11-11T13:11:51+03:00
+2026-11-09,İşletme Hakkı Devredilen Santrallar,taskomur,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,İşletme Hakkı Devredilen Santrallar,asfaltitkomur,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,İşletme Hakkı Devredilen Santrallar,ithalkomur,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,İşletme Hakkı Devredilen Santrallar,fueloil,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,İşletme Hakkı Devredilen Santrallar,motorin,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,İşletme Hakkı Devredilen Santrallar,nafta,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,İşletme Hakkı Devredilen Santrallar,lpg,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,İşletme Hakkı Devredilen Santrallar,atikisi,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,İşletme Hakkı Devredilen Santrallar,biyokutle,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,İşletme Hakkı Devredilen Santrallar,jeotermal,1.0,2026-11-11T13:11:51+03:00
+2026-11-09,İşletme Hakkı Devredilen Santrallar,barajli,25.0,2026-11-11T13:11:51+03:00
+2026-11-09,İşletme Hakkı Devredilen Santrallar,akarsu,66.0,2026-11-11T13:11:51+03:00
+2026-11-09,İşletme Hakkı Devredilen Santrallar,gunes,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,İşletme Hakkı Devredilen Santrallar,ruzgar,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,Lisanssız Santrallar,dogalgaz,107.0,2026-11-11T13:11:51+03:00
+2026-11-09,Lisanssız Santrallar,lng,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,Lisanssız Santrallar,linyit,2.0,2026-11-11T13:11:51+03:00
+2026-11-09,Lisanssız Santrallar,taskomur,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,Lisanssız Santrallar,asfaltitkomur,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,Lisanssız Santrallar,ithalkomur,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,Lisanssız Santrallar,fueloil,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,Lisanssız Santrallar,motorin,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,Lisanssız Santrallar,nafta,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,Lisanssız Santrallar,lpg,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,Lisanssız Santrallar,atikisi,16.0,2026-11-11T13:11:51+03:00
+2026-11-09,Lisanssız Santrallar,biyokutle,53.0,2026-11-11T13:11:51+03:00
+2026-11-09,Lisanssız Santrallar,jeotermal,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,Lisanssız Santrallar,barajli,1.0,2026-11-11T13:11:51+03:00
+2026-11-09,Lisanssız Santrallar,akarsu,27.0,2026-11-11T13:11:51+03:00
+2026-11-09,Lisanssız Santrallar,gunes,42925.0,2026-11-11T13:11:51+03:00
+2026-11-09,Lisanssız Santrallar,ruzgar,109.0,2026-11-11T13:11:51+03:00
+2026-11-09,Serbest Üretim Şirketi Santralları,dogalgaz,236.0,2026-11-11T13:11:51+03:00
+2026-11-09,Serbest Üretim Şirketi Santralları,lng,1.0,2026-11-11T13:11:51+03:00
+2026-11-09,Serbest Üretim Şirketi Santralları,linyit,42.0,2026-11-11T13:11:51+03:00
+2026-11-09,Serbest Üretim Şirketi Santralları,taskomur,4.0,2026-11-11T13:11:51+03:00
+2026-11-09,Serbest Üretim Şirketi Santralları,asfaltitkomur,1.0,2026-11-11T13:11:51+03:00
+2026-11-09,Serbest Üretim Şirketi Santralları,ithalkomur,16.0,2026-11-11T13:11:51+03:00
+2026-11-09,Serbest Üretim Şirketi Santralları,fueloil,7.0,2026-11-11T13:11:51+03:00
+2026-11-09,Serbest Üretim Şirketi Santralları,motorin,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,Serbest Üretim Şirketi Santralları,nafta,1.0,2026-11-11T13:11:51+03:00
+2026-11-09,Serbest Üretim Şirketi Santralları,lpg,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,Serbest Üretim Şirketi Santralları,atikisi,20.0,2026-11-11T13:11:51+03:00
+2026-11-09,Serbest Üretim Şirketi Santralları,biyokutle,309.0,2026-11-11T13:11:51+03:00
+2026-11-09,Serbest Üretim Şirketi Santralları,jeotermal,67.0,2026-11-11T13:11:51+03:00
+2026-11-09,Serbest Üretim Şirketi Santralları,barajli,84.0,2026-11-11T13:11:51+03:00
+2026-11-09,Serbest Üretim Şirketi Santralları,akarsu,528.0,2026-11-11T13:11:51+03:00
+2026-11-09,Serbest Üretim Şirketi Santralları,gunes,72.0,2026-11-11T13:11:51+03:00
+2026-11-09,Serbest Üretim Şirketi Santralları,ruzgar,311.0,2026-11-11T13:11:51+03:00
+2026-11-09,Yap İşlet Devret Santralları,dogalgaz,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,Yap İşlet Devret Santralları,lng,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,Yap İşlet Devret Santralları,linyit,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,Yap İşlet Devret Santralları,taskomur,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,Yap İşlet Devret Santralları,asfaltitkomur,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,Yap İşlet Devret Santralları,ithalkomur,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,Yap İşlet Devret Santralları,fueloil,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,Yap İşlet Devret Santralları,motorin,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,Yap İşlet Devret Santralları,nafta,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,Yap İşlet Devret Santralları,lpg,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,Yap İşlet Devret Santralları,atikisi,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,Yap İşlet Devret Santralları,biyokutle,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,Yap İşlet Devret Santralları,jeotermal,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,Yap İşlet Devret Santralları,barajli,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,Yap İşlet Devret Santralları,akarsu,1.0,2026-11-11T13:11:51+03:00
+2026-11-09,Yap İşlet Devret Santralları,gunes,0.0,2026-11-11T13:11:51+03:00
+2026-11-09,Yap İşlet Devret Santralları,ruzgar,0.0,2026-11-11T13:11:51+03:00
+2026-11-10,EÜAŞ Santralları,dogalgaz,5.0,2026-11-11T13:12:06+03:00
+2026-11-10,EÜAŞ Santralları,lng,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,EÜAŞ Santralları,linyit,3.0,2026-11-11T13:12:06+03:00
+2026-11-10,EÜAŞ Santralları,taskomur,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,EÜAŞ Santralları,asfaltitkomur,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,EÜAŞ Santralları,ithalkomur,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,EÜAŞ Santralları,fueloil,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,EÜAŞ Santralları,motorin,1.0,2026-11-11T13:12:06+03:00
+2026-11-10,EÜAŞ Santralları,nafta,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,EÜAŞ Santralları,lpg,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,EÜAŞ Santralları,atikisi,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,EÜAŞ Santralları,biyokutle,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,EÜAŞ Santralları,jeotermal,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,EÜAŞ Santralları,barajli,38.0,2026-11-11T13:12:06+03:00
+2026-11-10,EÜAŞ Santralları,akarsu,7.0,2026-11-11T13:12:06+03:00
+2026-11-10,EÜAŞ Santralları,gunes,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,EÜAŞ Santralları,ruzgar,2.0,2026-11-11T13:12:06+03:00
+2026-11-10,İşletme Hakkı Devredilen Santrallar,dogalgaz,1.0,2026-11-11T13:12:06+03:00
+2026-11-10,İşletme Hakkı Devredilen Santrallar,lng,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,İşletme Hakkı Devredilen Santrallar,linyit,1.0,2026-11-11T13:12:06+03:00
+2026-11-10,İşletme Hakkı Devredilen Santrallar,taskomur,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,İşletme Hakkı Devredilen Santrallar,asfaltitkomur,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,İşletme Hakkı Devredilen Santrallar,ithalkomur,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,İşletme Hakkı Devredilen Santrallar,fueloil,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,İşletme Hakkı Devredilen Santrallar,motorin,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,İşletme Hakkı Devredilen Santrallar,nafta,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,İşletme Hakkı Devredilen Santrallar,lpg,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,İşletme Hakkı Devredilen Santrallar,atikisi,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,İşletme Hakkı Devredilen Santrallar,biyokutle,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,İşletme Hakkı Devredilen Santrallar,jeotermal,1.0,2026-11-11T13:12:06+03:00
+2026-11-10,İşletme Hakkı Devredilen Santrallar,barajli,25.0,2026-11-11T13:12:06+03:00
+2026-11-10,İşletme Hakkı Devredilen Santrallar,akarsu,66.0,2026-11-11T13:12:06+03:00
+2026-11-10,İşletme Hakkı Devredilen Santrallar,gunes,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,İşletme Hakkı Devredilen Santrallar,ruzgar,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,Lisanssız Santrallar,dogalgaz,107.0,2026-11-11T13:12:06+03:00
+2026-11-10,Lisanssız Santrallar,lng,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,Lisanssız Santrallar,linyit,2.0,2026-11-11T13:12:06+03:00
+2026-11-10,Lisanssız Santrallar,taskomur,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,Lisanssız Santrallar,asfaltitkomur,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,Lisanssız Santrallar,ithalkomur,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,Lisanssız Santrallar,fueloil,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,Lisanssız Santrallar,motorin,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,Lisanssız Santrallar,nafta,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,Lisanssız Santrallar,lpg,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,Lisanssız Santrallar,atikisi,16.0,2026-11-11T13:12:06+03:00
+2026-11-10,Lisanssız Santrallar,biyokutle,53.0,2026-11-11T13:12:06+03:00
+2026-11-10,Lisanssız Santrallar,jeotermal,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,Lisanssız Santrallar,barajli,1.0,2026-11-11T13:12:06+03:00
+2026-11-10,Lisanssız Santrallar,akarsu,27.0,2026-11-11T13:12:06+03:00
+2026-11-10,Lisanssız Santrallar,gunes,42924.0,2026-11-11T13:12:06+03:00
+2026-11-10,Lisanssız Santrallar,ruzgar,109.0,2026-11-11T13:12:06+03:00
+2026-11-10,Serbest Üretim Şirketi Santralları,dogalgaz,236.0,2026-11-11T13:12:06+03:00
+2026-11-10,Serbest Üretim Şirketi Santralları,lng,1.0,2026-11-11T13:12:06+03:00
+2026-11-10,Serbest Üretim Şirketi Santralları,linyit,42.0,2026-11-11T13:12:06+03:00
+2026-11-10,Serbest Üretim Şirketi Santralları,taskomur,4.0,2026-11-11T13:12:06+03:00
+2026-11-10,Serbest Üretim Şirketi Santralları,asfaltitkomur,1.0,2026-11-11T13:12:06+03:00
+2026-11-10,Serbest Üretim Şirketi Santralları,ithalkomur,16.0,2026-11-11T13:12:06+03:00
+2026-11-10,Serbest Üretim Şirketi Santralları,fueloil,7.0,2026-11-11T13:12:06+03:00
+2026-11-10,Serbest Üretim Şirketi Santralları,motorin,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,Serbest Üretim Şirketi Santralları,nafta,1.0,2026-11-11T13:12:06+03:00
+2026-11-10,Serbest Üretim Şirketi Santralları,lpg,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,Serbest Üretim Şirketi Santralları,atikisi,20.0,2026-11-11T13:12:06+03:00
+2026-11-10,Serbest Üretim Şirketi Santralları,biyokutle,309.0,2026-11-11T13:12:06+03:00
+2026-11-10,Serbest Üretim Şirketi Santralları,jeotermal,67.0,2026-11-11T13:12:06+03:00
+2026-11-10,Serbest Üretim Şirketi Santralları,barajli,84.0,2026-11-11T13:12:06+03:00
+2026-11-10,Serbest Üretim Şirketi Santralları,akarsu,528.0,2026-11-11T13:12:06+03:00
+2026-11-10,Serbest Üretim Şirketi Santralları,gunes,72.0,2026-11-11T13:12:06+03:00
+2026-11-10,Serbest Üretim Şirketi Santralları,ruzgar,311.0,2026-11-11T13:12:06+03:00
+2026-11-10,Yap İşlet Devret Santralları,dogalgaz,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,Yap İşlet Devret Santralları,lng,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,Yap İşlet Devret Santralları,linyit,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,Yap İşlet Devret Santralları,taskomur,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,Yap İşlet Devret Santralları,asfaltitkomur,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,Yap İşlet Devret Santralları,ithalkomur,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,Yap İşlet Devret Santralları,fueloil,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,Yap İşlet Devret Santralları,motorin,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,Yap İşlet Devret Santralları,nafta,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,Yap İşlet Devret Santralları,lpg,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,Yap İşlet Devret Santralları,atikisi,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,Yap İşlet Devret Santralları,biyokutle,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,Yap İşlet Devret Santralları,jeotermal,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,Yap İşlet Devret Santralları,barajli,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,Yap İşlet Devret Santralları,akarsu,1.0,2026-11-11T13:12:06+03:00
+2026-11-10,Yap İşlet Devret Santralları,gunes,0.0,2026-11-11T13:12:06+03:00
+2026-11-10,Yap İşlet Devret Santralları,ruzgar,0.0,2026-11-11T13:12:06+03:00
