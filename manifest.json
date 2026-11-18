@@ -53,16 +53,14 @@
     "2026-11-09": "2026-11-12T12:01:50+03:00",
     "2026-11-10": "2026-11-16T10:14:42+03:00",
     "2026-11-11": "2026-11-16T10:14:42+03:00",
-    "2026-11-12": "2026-11-16T10:14:42+03:00"
+    "2026-11-12": "2026-11-18T10:27:49+03:00",
+    "2026-11-13": "2026-11-18T10:27:49+03:00",
+    "2026-11-14": "2026-11-18T10:27:49+03:00",
+    "2026-11-15": "2026-11-18T10:27:49+03:00",
+    "2026-11-16": "2026-11-18T10:27:49+03:00",
+    "2026-11-17": "2026-11-18T10:27:49+03:00",
+    "2026-11-18": "2026-11-18T10:27:49+03:00"
   },
-  "son_hatalar": {
-    "2026-11-10": "SOURCE_UNAVAILABLE: YTBS'ye bağlanılamadı. Kaynak yalnız Türkiye IP'lerinden yanıt veriyor; ytbs-sync Türkiye'deki bir makinede çalıştırılmalıdır.",
-    "2026-11-11": "SOURCE_UNAVAILABLE: YTBS'ye bağlanılamadı. Kaynak yalnız Türkiye IP'lerinden yanıt veriyor; ytbs-sync Türkiye'deki bir makinede çalıştırılmalıdır.",
-    "2026-11-12": "SOURCE_UNAVAILABLE: YTBS'ye bağlanılamadı. Kaynak yalnız Türkiye IP'lerinden yanıt veriyor; ytbs-sync Türkiye'deki bir makinede çalıştırılmalıdır.",
-    "2026-11-13": "SOURCE_UNAVAILABLE: YTBS'ye bağlanılamadı. Kaynak yalnız Türkiye IP'lerinden yanıt veriyor; ytbs-sync Türkiye'deki bir makinede çalıştırılmalıdır.",
-    "2026-11-14": "SOURCE_UNAVAILABLE: YTBS'ye bağlanılamadı. Kaynak yalnız Türkiye IP'lerinden yanıt veriyor; ytbs-sync Türkiye'deki bir makinede çalıştırılmalıdır.",
-    "2026-11-15": "SOURCE_UNAVAILABLE: YTBS'ye bağlanılamadı. Kaynak yalnız Türkiye IP'lerinden yanıt veriyor; ytbs-sync Türkiye'deki bir makinede çalıştırılmalıdır.",
-    "2026-11-16": "SOURCE_UNAVAILABLE: YTBS'ye bağlanılamadı. Kaynak yalnız Türkiye IP'lerinden yanıt veriyor; ytbs-sync Türkiye'deki bir makinede çalıştırılmalıdır."
-  },
-  "son_senkron": "2026-11-16T12:01:03+03:00"
+  "son_hatalar": {},
+  "son_senkron": "2026-11-18T10:27:49+03:00"
 }
