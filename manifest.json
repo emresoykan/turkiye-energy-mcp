@@ -61,6 +61,14 @@
     "2026-11-17": "2026-11-18T12:01:23+03:00",
     "2026-11-18": "2026-11-18T12:01:23+03:00"
   },
-  "son_hatalar": {},
-  "son_senkron": "2026-11-18T12:01:23+03:00"
+  "son_hatalar": {
+    "2026-11-14": "SOURCE_UNAVAILABLE: YTBS'ye bağlanılamadı. Kaynak yalnız Türkiye IP'lerinden yanıt veriyor; ytbs-sync Türkiye'deki bir makinede çalıştırılmalıdır.",
+    "2026-11-15": "SOURCE_UNAVAILABLE: YTBS'ye bağlanılamadı. Kaynak yalnız Türkiye IP'lerinden yanıt veriyor; ytbs-sync Türkiye'deki bir makinede çalıştırılmalıdır.",
+    "2026-11-16": "SOURCE_UNAVAILABLE: YTBS'ye bağlanılamadı. Kaynak yalnız Türkiye IP'lerinden yanıt veriyor; ytbs-sync Türkiye'deki bir makinede çalıştırılmalıdır.",
+    "2026-11-17": "SOURCE_UNAVAILABLE: YTBS'ye bağlanılamadı. Kaynak yalnız Türkiye IP'lerinden yanıt veriyor; ytbs-sync Türkiye'deki bir makinede çalıştırılmalıdır.",
+    "2026-11-18": "SOURCE_UNAVAILABLE: YTBS'ye bağlanılamadı. Kaynak yalnız Türkiye IP'lerinden yanıt veriyor; ytbs-sync Türkiye'deki bir makinede çalıştırılmalıdır.",
+    "2026-11-19": "SOURCE_UNAVAILABLE: YTBS'ye bağlanılamadı. Kaynak yalnız Türkiye IP'lerinden yanıt veriyor; ytbs-sync Türkiye'deki bir makinede çalıştırılmalıdır.",
+    "2026-11-20": "SOURCE_UNAVAILABLE: YTBS'ye bağlanılamadı. Kaynak yalnız Türkiye IP'lerinden yanıt veriyor; ytbs-sync Türkiye'deki bir makinede çalıştırılmalıdır."
+  },
+  "son_senkron": "2026-11-20T09:48:26+03:00"
 }
