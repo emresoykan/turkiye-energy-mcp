@@ -66,8 +66,13 @@
     "2026-11-22": "2026-11-22T12:04:56+03:00"
   },
   "son_hatalar": {
-    "2026-11-16": "DATA_NOT_AVAILABLE: YTBS istenen günü döndürmedi.",
-    "2026-11-20": "PARSING_ERROR: YTBS günlük rapor yerine XLSX olmayan içerik döndürdü."
+    "2026-11-17": "SOURCE_UNAVAILABLE: YTBS'ye bağlanılamadı. Kaynak yalnız Türkiye IP'lerinden yanıt veriyor; ytbs-sync Türkiye'deki bir makinede çalıştırılmalıdır.",
+    "2026-11-18": "SOURCE_UNAVAILABLE: YTBS'ye bağlanılamadı. Kaynak yalnız Türkiye IP'lerinden yanıt veriyor; ytbs-sync Türkiye'deki bir makinede çalıştırılmalıdır.",
+    "2026-11-19": "SOURCE_UNAVAILABLE: YTBS'ye bağlanılamadı. Kaynak yalnız Türkiye IP'lerinden yanıt veriyor; ytbs-sync Türkiye'deki bir makinede çalıştırılmalıdır.",
+    "2026-11-20": "SOURCE_UNAVAILABLE: YTBS'ye bağlanılamadı. Kaynak yalnız Türkiye IP'lerinden yanıt veriyor; ytbs-sync Türkiye'deki bir makinede çalıştırılmalıdır.",
+    "2026-11-21": "SOURCE_UNAVAILABLE: YTBS'ye bağlanılamadı. Kaynak yalnız Türkiye IP'lerinden yanıt veriyor; ytbs-sync Türkiye'deki bir makinede çalıştırılmalıdır.",
+    "2026-11-22": "SOURCE_UNAVAILABLE: YTBS'ye bağlanılamadı. Kaynak yalnız Türkiye IP'lerinden yanıt veriyor; ytbs-sync Türkiye'deki bir makinede çalıştırılmalıdır.",
+    "2026-11-23": "SOURCE_UNAVAILABLE: YTBS'ye bağlanılamadı. Kaynak yalnız Türkiye IP'lerinden yanıt veriyor; ytbs-sync Türkiye'deki bir makinede çalıştırılmalıdır."
   },
-  "son_senkron": "2026-11-22T12:04:56+03:00"
+  "son_senkron": "2026-11-23T12:01:03+03:00"
 }
